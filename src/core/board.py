@@ -52,3 +52,20 @@ class Board:
                     if self.grid[neighbor_y][neighbor_x].is_mine:
                         count += 1
         return count
+
+   def flood_fill(self, x, y):
+
+       if not 0 <= x < self.cols and not 0 <= y < self.rows:
+           return
+       if Cell.is_open or Cell.is_mine:
+           return
+
+       Cell.is_open = True
+
+       if Cell.adjacent_mine == 0:
+           for i in range(-1, 2):
+               for j in range(-1, 2):
+                   if i == 0 and j == 0:
+                       continue
+
+                   self.flood_fill(x + i, y + j)
