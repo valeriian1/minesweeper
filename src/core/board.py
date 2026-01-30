@@ -1,5 +1,4 @@
-from random import random
-
+import random
 from cell import Cell
 
 class Board:
@@ -7,6 +6,11 @@ class Board:
        self.rows = rows
        self.cols = cols
        self.mines_count = mines_count
+       self.grid = self._create_grid()
+
+   def __getitem__(self, pos):
+       x, y = pos
+       return self.grid[y][x]
 
    def _create_grid(self):
        grid = []
@@ -54,18 +58,27 @@ class Board:
         return count
 
    def flood_fill(self, x, y):
-
-       if not 0 <= x < self.cols and not 0 <= y < self.rows:
-           return
-       if Cell.is_open or Cell.is_mine:
+       if not (0 <= x < self.cols and  0 <= y < self.rows):
            return
 
-       Cell.is_open = True
+       current_cell = self.grid[y][x]
 
-       if Cell.adjacent_mine == 0:
+       if current_cell.is_open or current_cell.is_mine or current_cell.is_flagged:
+           return
+
+       current_cell.is_open = True
+
+       if current_cell.adjacent_mines == 0:
            for i in range(-1, 2):
                for j in range(-1, 2):
                    if i == 0 and j == 0:
                        continue
 
                    self.flood_fill(x + i, y + j)
+
+   def check_win(self):
+       for row in self.grid:
+           for cell in row:
+               if not cell.is_mine and not cell.is_open:
+                   return False
+       return True
