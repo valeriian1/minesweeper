@@ -9,7 +9,7 @@ class GameRenderer:
         
         # Завантажуємо спрайти
         self.sprites = {}
-        sprite_path = "assets/sprites"
+        sprite_path = "assets/sprites/board sprites"
         
         self.sprites['tile1'] = pygame.image.load(os.path.join(sprite_path, "gridTile1.png"))
         self.sprites['tile2'] = pygame.image.load(os.path.join(sprite_path, "gridTile2.png"))
