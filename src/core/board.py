@@ -22,11 +22,15 @@ class Board:
            grid.append(row)
        return grid
 
-   def place_mines(self):
+   def place_mines(self, safe_x=None, safe_y=None):
        mines_placed = 0
        while mines_placed < self.mines_count:
            x = random.randint(0, self.cols - 1)
            y = random.randint(0, self.rows - 1)
+
+           if safe_x is not None and safe_y is not None:
+               if abs(x - safe_x) <= 1 and abs(y - safe_y) <= 1:
+                   continue
 
            cell = self.grid[y][x]
            if not cell.is_mine:
