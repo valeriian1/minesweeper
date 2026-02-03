@@ -80,6 +80,15 @@ class Board:
 
                    self.flood_fill(x + i, y + j)
 
+   def reveal_all_mines(self):
+       mines_list = []
+       for row in self.grid:
+           for cell in row:
+               if cell.is_mine and not cell.is_open and not cell.is_flagged:
+                   cell.is_open = True
+                   mines_list.append(cell)
+       return mines_list
+
    def check_win(self):
        for row in self.grid:
            for cell in row:
