@@ -95,3 +95,12 @@ class Board:
                if not cell.is_mine and not cell.is_open:
                    return False
        return True
+
+   def get_mines_remaining(self):
+       flags_count = 0
+       for row in self.grid:
+           for cell in row:
+               if cell.is_flagged:
+                   flags_count += 1
+
+       return self.mines_count - flags_count
