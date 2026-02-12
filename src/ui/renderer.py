@@ -1,6 +1,8 @@
 import pygame
 import os
 
+from src.utils.constants import DIFFICULTIES
+
 class GameRenderer:
     def __init__(self, screen, cell_size, header_h):
         """
@@ -70,6 +72,13 @@ class GameRenderer:
             pygame.image.load(os.path.join(header_sprite_path, "boardLine1.png")).convert_alpha(),
             pygame.image.load(os.path.join(header_sprite_path, "boardLine2.png")).convert_alpha()
         ]
+
+        self.drop_menu_frames = [
+            pygame.image.load(os.path.join(header_sprite_path, "drop_menu1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(header_sprite_path, "drop_menu2.png")).convert_alpha()
+        ]
+
+        self.selected_menu = pygame.image.load(os.path.join(header_sprite_path, "selected_menu.png")).convert_alpha()
 
         self.endscreen_frames = [
             pygame.image.load(os.path.join(endscreen_sprite_path, "window1.png")).convert_alpha(),
@@ -218,5 +227,34 @@ class GameRenderer:
         self.screen.blit(btn_img, (draw_x, draw_y))
 
     def is_restart_clicked(self, pos):
-        """Викликається в main.py. Перевіряє, чи клік був по кнопці рестарту."""
+        """ Перевіряє, чи клік був по кнопці рестарту."""
         return hasattr(self, 'btn_rect') and self.btn_rect.collidepoint(pos)
+    
+    def draw_difficulty_menu(self):
+        """ Відображає випадаюче меню вибору складності."""
+        mouse_pos = pygame.mouse.get_pos()
+        frame_idx = (pygame.time.get_ticks() // 400) % 2
+
+        # Позиція плашки меню
+        menu_x, menu_y = 10, 16 
+        self.screen.blit(self.drop_menu_frames[frame_idx], (menu_x, menu_y))
+
+        options = list(DIFFICULTIES.keys())
+        self.menu_rects = {}
+        
+        start_y_offset = 31  
+        line_spacing = 35 
+
+        for i, opt in enumerate(options):
+            opt_y = menu_y + start_y_offset + (i * line_spacing)
+            
+            # Зона кліку
+            rect = pygame.Rect(menu_x, opt_y, 120, line_spacing)
+            self.menu_rects[opt] = rect
+
+            # Ефект наведення
+            if rect.collidepoint(mouse_pos):
+                # Малюємо виділення (під напис)
+                self.screen.blit(self.selected_menu, (rect.x, rect.y-5))
+
+            self.screen.blit(self.diff_labels[opt], (rect.x + 5, rect.y))
