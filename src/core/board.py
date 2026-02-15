@@ -1,5 +1,5 @@
 import random
-from cell import Cell
+from src.core.cell import Cell
 
 class Board:
    def __init__(self, rows, cols, mines_count):
