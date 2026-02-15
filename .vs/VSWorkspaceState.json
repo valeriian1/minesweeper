@@ -1,7 +1,10 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\src",
+    "\\src\\core",
+    "\\src\\ui"
   ],
-  "SelectedNode": "\\C:\\Users\\lenovo\\source\\repos\\valeriian1\\minesweeper",
+  "SelectedNode": "\\src\\ui\\renderer.py",
   "PreviewInSolutionExplorer": false
 }
