@@ -1,6 +1,8 @@
 import pygame
 import os
 
+from src.utils.constants import DIFFICULTIES
+
 class GameRenderer:
     def __init__(self, screen, cell_size, header_h):
         """
@@ -15,9 +17,15 @@ class GameRenderer:
         self.open_mask.set_alpha(80)
         self.open_mask.fill((0, 0, 50))
 
+        # Створюємо напівпрозору чорну оверлей поверх всього екрану (для віконця кінець гри)
+        self.overlay = pygame.Surface((1000, 1000)) # З запасом
+        self.overlay.set_alpha(180)
+        self.overlay.fill((0, 0, 0))
+
         # Завантажуємо спрайти
         board_sprite_path = "assets/sprites/board sprites"
         header_sprite_path = "assets/sprites/header sprites"
+        endscreen_sprite_path = "assets/sprites/endscreen sprites"
 
         raw_sprites = {
             'tile1': "gridTile1.png", 'tile2': "gridTile2.png",
@@ -63,6 +71,33 @@ class GameRenderer:
         self.board_line = [
             pygame.image.load(os.path.join(header_sprite_path, "boardLine1.png")).convert_alpha(),
             pygame.image.load(os.path.join(header_sprite_path, "boardLine2.png")).convert_alpha()
+        ]
+
+        self.drop_menu_frames = [
+            pygame.image.load(os.path.join(header_sprite_path, "drop_menu1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(header_sprite_path, "drop_menu2.png")).convert_alpha()
+        ]
+
+        self.selected_menu = pygame.image.load(os.path.join(header_sprite_path, "selected_menu.png")).convert_alpha()
+
+        self.endscreen_frames = [
+            pygame.image.load(os.path.join(endscreen_sprite_path, "window1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(endscreen_sprite_path, "window2.png")).convert_alpha()
+        ]
+
+        self.trophy_frames = [
+            pygame.image.load(os.path.join(endscreen_sprite_path, "trophy1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(endscreen_sprite_path, "trophy2.png")).convert_alpha()
+        ]
+        
+        self.skull_frames = [
+            pygame.image.load(os.path.join(endscreen_sprite_path, "skull1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(endscreen_sprite_path, "skull2.png")).convert_alpha()
+        ]
+
+        self.restart_btn_frames = [
+            pygame.image.load(os.path.join(endscreen_sprite_path, "restart_btn1.png")).convert_alpha(),
+            pygame.image.load(os.path.join(endscreen_sprite_path, "restart_btn2.png")).convert_alpha()
         ]
 
     def get_cell_from_pos(self, pos):
@@ -137,3 +172,89 @@ class GameRenderer:
         s_value = str(val).zfill(3)
         for i, digit in enumerate(s_value):
             self.screen.blit(self.header_digits[int(digit)], (x + i * 19, y))
+
+    def draw_end_screen(self, status, current_time, best_time):
+        """
+        Відображає вікно кінця гри (перемога або поразка).
+        """
+        sw = self.screen.get_width()
+        sh = self.screen.get_height()
+        
+        # Малюємо затемнення
+        self.screen.blit(self.overlay, (0, 0))
+        
+        # Визначаємо індекс кадру (кожні 500 мс)
+        frame_idx = (pygame.time.get_ticks() // 500) % 2
+        
+        # Малюємо базове вікно
+        win_img = self.endscreen_frames[frame_idx]
+        win_x = (sw - win_img.get_width()) // 2
+        win_y = (sh - win_img.get_height()) // 2
+        self.screen.blit(win_img, (win_x, win_y))
+        
+        # Малюємо іконки для поточного та найкращого часу
+        self.screen.blit(self.trophy_frames[frame_idx], (win_x, win_y))
+        self.screen.blit(self.icon_clock[frame_idx], (win_x + 40, win_y + 65))
+        
+        # Малюємо череп (при програші)
+        if status == 'lose':
+            self.screen.blit(self.skull_frames[frame_idx], (win_x, win_y))
+
+        #в майбутньому додати спрайт для перемоги...
+        
+        # Малюємо цифри
+        # Поточний результат
+        self.draw_header_number(current_time, win_x + 20, win_y + 110)
+        
+        # Найкращий результат сесії
+        self.draw_header_number(best_time, win_x + 180, win_y + 110)
+
+        # кнопка RESTART
+        mouse_pos = pygame.mouse.get_pos()
+        # Розраховуємо позицію кнопки
+        self.btn_rect = pygame.Rect(win_x+110, win_y+110, 75, 50)
+        
+        # Перевірка: чи наведена миша на кнопку
+        if self.btn_rect.collidepoint(mouse_pos):
+            btn_img = self.restart_btn_frames[1]
+            draw_x = self.btn_rect.x-10
+            draw_y = self.btn_rect.y
+        else:
+            btn_img = self.restart_btn_frames[0]
+            draw_x = self.btn_rect.x-2
+            draw_y = self.btn_rect.y
+            
+        self.screen.blit(btn_img, (draw_x, draw_y))
+
+    def is_restart_clicked(self, pos):
+        """ Перевіряє, чи клік був по кнопці рестарту."""
+        return hasattr(self, 'btn_rect') and self.btn_rect.collidepoint(pos)
+    
+    def draw_difficulty_menu(self):
+        """ Відображає випадаюче меню вибору складності."""
+        mouse_pos = pygame.mouse.get_pos()
+        frame_idx = (pygame.time.get_ticks() // 400) % 2
+
+        # Позиція плашки меню
+        menu_x, menu_y = 10, 16 
+        self.screen.blit(self.drop_menu_frames[frame_idx], (menu_x, menu_y))
+
+        options = list(DIFFICULTIES.keys())
+        self.menu_rects = {}
+        
+        start_y_offset = 31  
+        line_spacing = 35 
+
+        for i, opt in enumerate(options):
+            opt_y = menu_y + start_y_offset + (i * line_spacing)
+            
+            # Зона кліку
+            rect = pygame.Rect(menu_x, opt_y, 120, line_spacing)
+            self.menu_rects[opt] = rect
+
+            # Ефект наведення
+            if rect.collidepoint(mouse_pos):
+                # Малюємо виділення (під напис)
+                self.screen.blit(self.selected_menu, (rect.x, rect.y-5))
+
+            self.screen.blit(self.diff_labels[opt], (rect.x + 5, rect.y))
