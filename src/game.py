@@ -8,177 +8,153 @@ from src.utils.constants import DIFFICULTIES, HEADER_HEIGHT, BG_COLOR
 class Game:
     def __init__(self):
         """
-        Ініціалізація гри
-        Встановлює початкові параметри Pygame, завантажує список складностей,
-        запускає початкове налаштування вікна
+        Ініціалізація гри: налаштування базових параметрів та запуск першого сеансу.
         """
         pygame.init()
         
-        # Створюємо список ключів Easy, Medium, Hard, для зручного перемикання
-        self.difficulty_names = list(DIFFICULTIES.keys())
-        self.current_diff_idx = 0
-        self.difficulty = self.difficulty_names[self.current_diff_idx]
+        # Визначаємо початкову складність
+        self.difficulty = "easy"
+        self.best_time = 999
         
         self.running = True
         self.setup_game()
 
     def setup_game(self):
         """
-        Конфігурація ігрового сеансу
-        Викликається при старті гри, зміні складності або рестарті
-        Створює об'єкти поля та візуалізатора
+        Конфігурація ігрового сеансу: створення поля, екрану та рендерера
+        Викликається при старті, зміні складності або рестарті
         """
         config = DIFFICULTIES[self.difficulty]
         self.rows, self.cols = config["rows"], config["cols"]
-        self.mines_count, self.cell_size = config["mines"], config["cell_size"]
+        self.mines_cnt, self.cell_sz = config["mines"], config["cell_size"]
         
-        width = self.cols * self.cell_size
-        height = (self.rows * self.cell_size) + HEADER_HEIGHT
+        # Розрахунок розмірів вікна
+        w = self.cols * self.cell_sz
+        h = (self.rows * self.cell_sz) + HEADER_HEIGHT
         
-        self.screen = pygame.display.set_mode((width, height))
+        self.screen = pygame.display.set_mode((w, h))
         pygame.display.set_caption("Minesweeper")
         
-        self.board = Board(self.rows, self.cols, self.mines_count)
-        self.renderer = GameRenderer(self.screen, self.cell_size, HEADER_HEIGHT)
+        # Ініціалізація основних об'єктів
+        self.board = Board(self.rows, self.cols, self.mines_cnt)
+        self.renderer = GameRenderer(self.screen, self.cell_sz, HEADER_HEIGHT)
         
-        # Ігрові стани
-        self.first_click = True  
-        self.game_over = False   
-        self.won = False        
-        self.start_time = 0     
-        self.elapsed_time = 0    
+        # Скидання ігрових станів
+        self.first_click = True
+        self.game_over = False
+        self.won = False
+        self.menu_open = False
+        self.start_time = 0
+        self.elapsed_time = 0
 
     def handle_events(self):
         """
-        Обробка черги подій Pygame
-        Слухає системні сигнали та дії користувача
+        Обробка подій: вихід з гри та кліки миші
         """
         for event in pygame.event.get():
-            # Закриття вікна через хрестик
             if event.type == pygame.QUIT:
                 self.running = False
             
-            # Обробка натискань клавіш миші
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self._handle_mouse_click(event)
 
     def _handle_mouse_click(self, event):
         """
-        Розподіляє кліки миші між ігровими зонами
-        Якщо гра закінчена, будь-який клік скидає гру до початку
+        Розподіляє кліки між екраном закінчення гри, меню та ігровим полем
         """
+        pos = pygame.mouse.get_pos()
+
+        #Якщо гра закінчена, перевіряємо клік по кнопці рестарту
         if self.game_over or self.won:
-            self.setup_game() 
+            if self.renderer.is_restart_clicked(pos):
+                self.setup_game()
             return
 
-        pos = pygame.mouse.get_pos() # Отримуємо координати курсора
-        
-        # Перевіряємо, чи клік був у верхній панелі чи на полі
+        #Якщо відкрите меню складності
+        if self.menu_open:
+            for opt, rect in self.renderer.menu_rects.items():
+                if rect.collidepoint(pos):
+                    self.difficulty = opt
+                    self.setup_game()
+                    return
+            self.menu_open = False
+            return
+
+        #Кліки по верхній панелі (хедеру)
         if pos[1] < HEADER_HEIGHT:
-            self._handle_header_click(pos)
+            #Якщо клікнули в районі кнопки меню 
+            if 10 <= pos[0] <= 110:
+                self.menu_open = not self.menu_open
+        
+        #Кліки по ігровому полю
         else:
-            # Передаємо координати та номер кнопки 
-            self._handle_board_click(pos, event.button)
+            grid_pos = self.renderer.get_cell_from_pos(pos)
+            if grid_pos:
+                r, c = grid_pos
+                if event.button == 1: # Ліва кнопка миші
+                    self._open_cell(r, c)
+                elif event.button == 3: # Права кнопка миші
+                    self.board.grid[r][c].toggle_flag()
 
-    def _handle_header_click(self, pos):
+    def _open_cell(self, r, c):
         """
-        Обробка взаємодії з верхнім меню
-        Зараз реалізовано зміну складності при натисканні в лівій частині хедера
+        Логіка відкриття клітинки з урахуванням першого ходу та мін
         """
-        if 10 <= pos[0] <= 110: 
-            self.current_diff_idx = (self.current_diff_idx + 1) % len(self.difficulty_names)
-            self.difficulty = self.difficulty_names[self.current_diff_idx]
-            self.setup_game()
-
-    def _handle_board_click(self, pos, mouse_button):
-        """
-        Перетворює координати пікселів у координати сітки 
-        та виконує відповідну ігрову дію
-        """
-        grid_pos = self.renderer.get_cell_from_pos(pos)
-        if not grid_pos:
-            return
-
-        r, c = grid_pos
         cell = self.board.grid[r][c]
-
-        if mouse_button == 1: 
-            self._open_cell(cell, c, r)  
-        elif mouse_button == 3: 
-            cell.toggle_flag()
-
-    def _open_cell(self, cell, x, y):  
-        """
-        Логіка відкриття клітинки
-        Враховує правила першого ходу, підриву на міні та ланцюгового відкриття
-        """
-        # Не дозволяємо відкривати клітинки з прапорцями
-        if cell.is_flagged:
+        if cell.is_flagged or cell.is_open:
             return
 
-        # Перший клік у грі: генеруємо міни так, щоб гравець не програв одразу
+        # Генерація мін після першого кліку
         if self.first_click:
-            self._start_game_logic(x, y) 
+            self.board.place_mines(safe_x=c, safe_y=r)
+            self.board.calculate_neighbors()
+            self.first_click = False
+            self.start_time = time.time()
 
         if cell.is_mine:
-            # Кінець гри: показуємо всі міни на полі
             self.game_over = True
             self.board.reveal_all_mines()
         else:
-            # Якщо міни немає, відкриваємо порожнечу 
-            self.board.flood_fill(x, y)
-            # Після кожного ходу перевіряємо, чи не залишилися тільки міни 
+            self.board.flood_fill(c, r)
             if self.board.check_win():
                 self.won = True
-
-    def _start_game_logic(self, start_x, start_y):
-        """
-        Відкладена ініціалізація
-        Міни створюються тільки тоді, коли гравець вперше клікнув на поле
-        """
-        # Передаємо координати першого кліку як безпечну зону
-        self.board.place_mines(safe_x=start_x, safe_y=start_y)
-        # Розраховуємо кількість мін навколо для кожної клітинки
-        self.board.calculate_neighbors()
-        self.first_click = False
-        self.start_time = time.time()
+                self.best_time = min(self.best_time, self.elapsed_time)
 
     def update(self):
         """
-        Оновлення стану гри в реальному часі
-        Викликається кожного кадру перед малюванням
+        Оновлення таймера, якщо гра триває
         """
         if not self.first_click and not self.game_over and not self.won:
             self.elapsed_time = int(time.time() - self.start_time)
 
     def draw(self):
         """
-        Візуалізація гри 
-        Використовує Renderer для малювання шарів
+        Відображення всіх елементів гри
         """
-        self.screen.fill(BG_COLOR) 
+        self.screen.fill(BG_COLOR)
         
-        # Малюємо сітку та стан клітинок
+        # Малюємо поле та хедер
         self.renderer.draw_board(self.board)
+        self.renderer.draw_header(self.board.get_mines_remaining(), self.elapsed_time, self.difficulty)
         
-        # Малюємо верхню панель 
-        self.renderer.draw_header(
-            self.board.get_mines_remaining(), 
-            self.elapsed_time, 
-            self.difficulty
-        )
+        # Малюємо екран закінчення, якщо потрібно
+        if self.game_over or self.won:
+            status = 'lose' if self.game_over else 'win'
+            self.renderer.draw_end_screen(status, self.elapsed_time, self.best_time)
         
-        # Виводимо підготовлений кадр на монітор
+        # Малюємо меню поверх усього
+        if self.menu_open:
+            self.renderer.draw_difficulty_menu()
+            
         pygame.display.flip()
 
     def run(self):
         clock = pygame.time.Clock()
         while self.running:
-            self.handle_events() 
-            self.update()        
-            self.draw()         
-            
+            self.handle_events()
+            self.update()
+            self.draw()
             clock.tick(60)
-            
+        
         pygame.quit()
         sys.exit()
