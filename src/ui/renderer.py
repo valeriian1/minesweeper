@@ -37,10 +37,10 @@ class GameRenderer:
         self.cell_size = cell_size
         self.header_h = header_h
 
-        # Створюємо напівпрозору маску для відкритих клітинок
-        self.open_mask = pygame.Surface((self.cell_size, self.cell_size))
-        self.open_mask.set_alpha(80)
-        self.open_mask.fill((0, 0, 50))
+        # Створюємо напівпрозору маску для закритих клітинок
+        self.closed_mask = pygame.Surface((self.cell_size, self.cell_size))
+        self.closed_mask.set_alpha(120)
+        self.closed_mask.fill((0, 0, 120))
 
         # Створюємо напівпрозору чорну оверлей поверх всього екрану (для віконця кінець гри)
         self.overlay = pygame.Surface((1000, 1000))
@@ -130,16 +130,17 @@ class GameRenderer:
                 
                 # Якщо клітинка відкрита
                 if cell.is_open:
-                    self.screen.blit(self.open_mask, (x, y))
-                    
                     if cell.is_mine:
                         self.screen.blit(self.sprites['mine'], (x, y))
                     elif cell.adjacent_mines > 0:
                         self.screen.blit(self.sprites[f'tile{cell.adjacent_mines}a'], (x, y))
                 
-                # Якщо стоїть прапорець
-                elif cell.is_flagged:
-                    self.screen.blit(self.sprites['flag'], (x, y))
+                # Якщо клітинка закрита
+                else:
+                    self.screen.blit(self.closed_mask, (x, y))
+                    # Якщо стоїть прапорець
+                    if cell.is_flagged:
+                        self.screen.blit(self.sprites['flag'], (x, y))
     
     def draw_header(self, mines_count, time_seconds, difficulty):
         """
