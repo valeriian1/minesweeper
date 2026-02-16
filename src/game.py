@@ -6,14 +6,15 @@ from src.ui.renderer import GameRenderer
 from src.utils.constants import DIFFICULTIES, HEADER_HEIGHT, BG_COLOR
 
 class Game:
-    def __init__(self):
+    def __init__(self, difficulty="easy"):
         """
         Ініціалізація гри: налаштування базових параметрів та запуск першого сеансу.
+        :param difficulty: Початковий рівень складності ("easy", "medium", "hard")
         """
         pygame.init()
         
         # Визначаємо початкову складність
-        self.difficulty = "easy"
+        self.difficulty = difficulty
         self.best_time = 999
         
         self.running = True
