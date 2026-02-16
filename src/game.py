@@ -8,13 +8,13 @@ from src.utils.constants import DIFFICULTIES, HEADER_HEIGHT, BG_COLOR
 class Game:
     def __init__(self):
         """
-        Ініціалізація гри: налаштування базових параметрів та запуск першого сеансу.
+        Ініціалізація гри: налаштування базових параметрів та запуск першого сеансу
         """
         pygame.init()
         
         # Визначаємо початкову складність
         self.difficulty = "easy"
-        self.best_time = 999
+        self.best_time = 0
         
         self.running = True
         self.setup_game()
@@ -40,6 +40,10 @@ class Game:
         self.renderer = GameRenderer(self.screen, self.cell_sz, HEADER_HEIGHT)
         
         # Скидання ігрових станів
+        self._reset_game_states()
+
+    def _reset_game_states(self):
+        """Скидання ігрових станів до початкових значень"""
         self.first_click = True
         self.game_over = False
         self.won = False
@@ -64,37 +68,49 @@ class Game:
         """
         pos = pygame.mouse.get_pos()
 
-        #Якщо гра закінчена, перевіряємо клік по кнопці рестарту
-        if self.game_over or self.won:
-            if self.renderer.is_restart_clicked(pos):
-                self.setup_game()
+        # Якщо гра закінчена, перевіряємо клік по кнопці рестарту
+        if (self.game_over or self.won) and self.renderer.is_restart_clicked(pos):
+            self.setup_game()
             return
 
-        #Якщо відкрите меню складності
+        # Якщо на зоні меню, відкриваємо його відповідно
         if self.menu_open:
-            for opt, rect in self.renderer.menu_rects.items():
-                if rect.collidepoint(pos):
-                    self.difficulty = opt
-                    self.setup_game()
-                    return
+            if self._handle_menu_interaction(pos):
+                return
             self.menu_open = False
             return
 
-        #Кліки по верхній панелі (хедеру)
-        if pos[1] < HEADER_HEIGHT:
-            #Якщо клікнули в районі кнопки меню 
+        if self._is_header_clicked(pos):
             if 10 <= pos[0] <= 110:
                 self.menu_open = not self.menu_open
+            return
         
-        #Кліки по ігровому полю
-        else:
-            grid_pos = self.renderer.get_cell_from_pos(pos)
-            if grid_pos:
-                r, c = grid_pos
-                if event.button == 1: # Ліва кнопка миші
-                    self._open_cell(r, c)
-                elif event.button == 3: # Права кнопка миші
-                    self.board.grid[r][c].toggle_flag()
+        # Кліки по ігровому полю
+        if pos[1] >= HEADER_HEIGHT:
+            self._handle_grid_interaction(event, pos)
+
+    def _is_header_clicked(self, pos):
+        """Перевірка кліку в області хедера"""
+        return pos[1] < HEADER_HEIGHT
+
+    def _handle_menu_interaction(self, pos):
+        """Обробка вибору в меню складності"""
+        for opt, rect in self.renderer.menu_rects.items():
+            if rect.collidepoint(pos):
+                self.difficulty = opt
+                self.setup_game()
+                return True
+        return False
+
+    def _handle_grid_interaction(self, event, pos):
+        """Кліки по ігровому полю"""
+        grid_pos = self.renderer.get_cell_from_pos(pos)
+        if grid_pos:
+            r, c = grid_pos
+            if event.button == 1: # Ліва кнопка миші
+                self._open_cell(r, c)
+            elif event.button == 3: # Права кнопка миші
+                self.board.grid[r][c].toggle_flag()
 
     def _open_cell(self, r, c):
         """
@@ -106,19 +122,29 @@ class Game:
 
         # Генерація мін після першого кліку
         if self.first_click:
-            self.board.place_mines(safe_x=c, safe_y=r)
-            self.board.calculate_neighbors()
-            self.first_click = False
-            self.start_time = time.time()
+            self._generate_board_after_first_click(r, c)
 
         if cell.is_mine:
             self.game_over = True
             self.board.reveal_all_mines()
         else:
             self.board.flood_fill(c, r)
-            if self.board.check_win():
-                self.won = True
-                self.best_time = min(self.best_time, self.elapsed_time)
+            self._check_victory_condition()
+
+    def _generate_board_after_first_click(self, r, c):
+        """Генерація мін та запуск таймера"""
+        self.board.place_mines(safe_x=c, safe_y=r)
+        self.board.calculate_neighbors()
+        self.first_click = False
+        self.start_time = time.time()
+
+    def _check_victory_condition(self):
+        """Перевірка перемоги та оновлення рекорду"""
+        if self.board.check_win():
+            self.won = True
+            # Оновлюємо рекорд, якщо він ще не встановлений або час кращий
+            if self.best_time == 0 or self.elapsed_time < self.best_time:
+                self.best_time = self.elapsed_time
 
     def update(self):
         """
