@@ -6,9 +6,9 @@ def main():
     parser.add_argument(
         '--difficulty', '-d', 
         type=str, 
-        choices=['easy', 'medium', 'hard'], 
+        choices=['easy', 'normal', 'hard'],
         default='easy',
-        help="Set the difficulty level (easy, medium, hard)"
+        help="Set the difficulty level (easy, normal, hard)"
     )
     args = parser.parse_args()
 
