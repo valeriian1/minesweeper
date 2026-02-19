@@ -3,7 +3,7 @@ import sys
 import time
 from src.core.board import Board
 from src.ui.renderer import GameRenderer
-from src.event_handler import EventHandler
+from src.engine.event_handler import EventHandler
 from src.utils.constants import DIFFICULTIES, HEADER_HEIGHT, BG_COLOR
 
 class Game:
