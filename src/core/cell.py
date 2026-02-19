@@ -1,38 +1,34 @@
-
 class Cell:
-    def __init__(self, x, y):
+    def __init__(self, col: int, row: int):
         """
         Initialize a Cell with its grid coordinates.
 
         Args:
-            x (int): The x-coordinate (column).
-            y (int): The y-coordinate (row).
+            col: The column index.
+            row: The row index.
         """
-        self.x = x
-        self.y = y
-        self.is_mine = False
-        self.is_open = False
-        self.is_flagged = False
-        self.adjacent_mines = 0
+        self.col = col
+        self.row = row
+        self.is_mine: bool = False
+        self.is_open: bool = False
+        self.is_flagged: bool = False
+        self.adjacent_mines: int = 0
 
-    def toggle_flag(self):
+    def toggle_flag(self) -> None:
         """
         Toggles the flagged state of the cell if it is not open.
         """
         if not self.is_open:
             self.is_flagged = not self.is_flagged
 
-    def reveal(self):
+    def reveal(self) -> bool:
         """
         Reveals the cell if it is not flagged or already open.
 
         Returns:
-            bool: True if the cell was successfully opened, False if it was already open or flagged.
+            True if the cell was successfully opened, False if it was already open or flagged.
         """
         if self.is_flagged or self.is_open:
             return False
         self.is_open = True
         return True
-
-
-

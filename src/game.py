@@ -97,17 +97,17 @@ class Game:
                 elif event.button == 3: # Права кнопка миші
                     self.board.grid[r][c].toggle_flag()
 
-    def _open_cell(self, r, c):
+    def _open_cell(self, row, col):
         """
         Логіка відкриття клітинки з урахуванням першого ходу та мін
         """
-        cell = self.board.grid[r][c]
+        cell = self.board.grid[row][col]
         if cell.is_flagged or cell.is_open:
             return
 
         # Генерація мін після першого кліку
         if self.first_click:
-            self.board.place_mines(safe_x=c, safe_y=r)
+            self.board.place_mines(safe_col=col, safe_row=row)
             self.board.calculate_neighbors()
             self.first_click = False
             self.start_time = time.time()
@@ -116,7 +116,7 @@ class Game:
             self.game_over = True
             self.board.reveal_all_mines()
         else:
-            self.board.flood_fill(c, r)
+            self.board.flood_fill(col, row)
             if self.board.check_win():
                 self.won = True
                 self.best_time = min(self.best_time, self.elapsed_time)
