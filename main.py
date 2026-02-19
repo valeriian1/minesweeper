@@ -1,14 +1,15 @@
 import argparse
 from src.game import Game
+from src.utils.constants import DIFFICULTIES
 
 def main():
     parser = argparse.ArgumentParser(description="Minesweeper Game")
     parser.add_argument(
         '--difficulty', '-d', 
         type=str, 
-        choices=['easy', 'normal', 'hard'],
+        choices=list(DIFFICULTIES.keys()),
         default='easy',
-        help="Set the difficulty level (easy, normal, hard)"
+        help=f"Set the difficulty level ({', '.join(DIFFICULTIES.keys())})"
     )
     args = parser.parse_args()
 
