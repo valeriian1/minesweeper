@@ -1,23 +1,24 @@
 import pygame
 import os
 
-from src.utils.constants import DIFFICULTIES
+from src.utils.constants import DIFFICULTIES, BOARD_SPRITES, HEADER_SPRITES, ENDSCREEN_SPRITES
 
 class GameRenderer:
 
-    def load_frames(self, path, name_prefix, count):
+    def load_frames(self, path, name_prefix, start_index, end_index):
         """
         Завантажує n кадрів з папки за шаблоном назви
         
         Args:
             path (str): Шлях до папки з кадрами.
             name_prefix (str): Загальна частина назви файлів кадрів (без номера та розширення).
-            count (int): Кількість кадрів для завантаження.
+            start_index (int): Початковий номер кадру.
+            end_index (int): Кількість кадрів для завантаження.
         Returns:
             list: Список завантажених кадрів у вигляді pygame.Surface.
         """
         frames = []
-        for i in range(1, count + 1):
+        for i in range(start_index, start_index + end_index):
             full_path = os.path.join(path, f"{name_prefix}{i}.png")
             img = pygame.image.load(full_path).convert_alpha()
             frames.append(img)
@@ -39,19 +40,16 @@ class GameRenderer:
 
         # Створюємо напівпрозору маску для закритих клітинок
         self.closed_mask = pygame.Surface((self.cell_size, self.cell_size))
-        self.closed_mask.set_alpha(120)
-        self.closed_mask.fill((0, 0, 120))
+
+        self.closed_mask.set_alpha(110)
+        self.closed_mask.fill((55, 50, 200))
 
         # Створюємо напівпрозору чорну оверлей поверх всього екрану (для віконця кінець гри)
         self.overlay = pygame.Surface((1000, 1000))
         self.overlay.set_alpha(180)
         self.overlay.fill((0, 0, 0))
 
-        # Завантажуємо спрайти
-        board_sprite_path = "assets/sprites/board sprites"
-        header_sprite_path = "assets/sprites/header sprites"
-        endscreen_sprite_path = "assets/sprites/endscreen sprites"
-
+        # Спрайти для клітинок
         raw_sprites = {
             'tile1': "gridTile1.png", 'tile2': "gridTile2.png",
             'mine': "TileMine.png", 'flag': "TileFlagRed.png",
@@ -60,46 +58,34 @@ class GameRenderer:
             'tile5a': "Tile5a.png", 'tile6a': "Tile6a.png",
             'tile7a': "Tile7a.png", 'tile8a': "Tile8a.png"
         }
-        
-        self.sprites = {}
-        for key, filename in raw_sprites.items():
-            img = pygame.image.load(os.path.join(board_sprite_path, filename)).convert_alpha()
+        self.sprites = {
             # Масштабуємо спрайти до розміру клітинки
-            self.sprites[key] = pygame.transform.scale(img, (self.cell_size, self.cell_size))
+            k: pygame.transform.scale(
+                pygame.image.load(os.path.join(BOARD_SPRITES, v)).convert_alpha(), 
+                (self.cell_size, self.cell_size)
+            ) for k, v in raw_sprites.items()
+        }        
 
-        # Хедерні спрайти
-        self.header_frames = self.load_frames(header_sprite_path, "frame_v", 2)
-        
-        self.icon_flag = self.load_frames(header_sprite_path, "Flag", 2)
-        
-        self.icon_clock = self.load_frames(header_sprite_path, "Clock", 2)
-
-        self.header_digits = [
-            pygame.image.load(os.path.join(header_sprite_path, f"Timer{i}.png")).convert_alpha() 
-            for i in range(10)
-        ]
-
+        # Хедер
+        self.header_frames = self.load_frames(HEADER_SPRITES, "frame_v", 1, 2)
+        self.icon_flag = self.load_frames(HEADER_SPRITES, "Flag", 1, 2)
+        self.icon_clock = self.load_frames(HEADER_SPRITES, "Clock", 1, 2)
+        self.board_line = self.load_frames(HEADER_SPRITES, "boardLine", 1, 2)
+        self.header_digits = self.load_frames(HEADER_SPRITES, "Timer", 0, 10)
+        self.drop_menu_frames = self.load_frames(HEADER_SPRITES, "drop_menu", 1, 2)
+        self.selected_menu = pygame.image.load(os.path.join(HEADER_SPRITES, "selected_menu.png")).convert_alpha()
         self.diff_labels = {
-            k: pygame.image.load(os.path.join(header_sprite_path, f"label_{v}.png")).convert_alpha()
-            for k, v in [("easy", "easy"), ("normal", "normal"), ("hard", "hard")]
+            k: pygame.image.load(os.path.join(HEADER_SPRITES, f"label_{k}.png")).convert_alpha()
+            for k in DIFFICULTIES.keys()
         }
 
-        self.board_line = self.load_frames(header_sprite_path, "boardLine", 2)
-
-        self.drop_menu_frames = self.load_frames(header_sprite_path, "drop_menu", 2)
-
-        self.selected_menu = pygame.image.load(os.path.join(header_sprite_path, "selected_menu.png")).convert_alpha()
-
-        self.endscreen_frames = self.load_frames(endscreen_sprite_path, "window", 2)
-
-        self.trophy_frames = self.load_frames(endscreen_sprite_path, "trophy", 2)
-        
-        self.skull_frames = self.load_frames(endscreen_sprite_path, "skull", 2)
-
-        self.smiley_frames = self.load_frames(endscreen_sprite_path, "smileyFace", 2)
-
-        self.restart_btn_frames = self.load_frames(endscreen_sprite_path, "restart_btn", 2)
-
+        # Екран закінчення гри
+        self.endscreen_frames = self.load_frames(ENDSCREEN_SPRITES, "window", 1, 2)
+        self.trophy_frames = self.load_frames(ENDSCREEN_SPRITES, "trophy", 1, 2)
+        self.skull_frames = self.load_frames(ENDSCREEN_SPRITES, "skull", 1, 2)
+        self.smiley_frames = self.load_frames(ENDSCREEN_SPRITES, "smileyFace", 1, 2)
+        self.restart_btn_frames = self.load_frames(ENDSCREEN_SPRITES, "restart_btn", 1, 2)
+    
     def get_cell_from_pos(self, pos):
         """
         Перетворює координати кліку миші (x, y) у логічні координати сітки (row, col).

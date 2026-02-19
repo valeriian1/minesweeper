@@ -1,3 +1,14 @@
+import os
+
+# Базовий шлях до ресурсів
+ASSETS_DIR = "assets"
+SPRITES_DIR = os.path.join(ASSETS_DIR, "sprites")
+
+# Підпапки
+BOARD_SPRITES = os.path.join(SPRITES_DIR, "board sprites")
+HEADER_SPRITES = os.path.join(SPRITES_DIR, "header sprites")
+ENDSCREEN_SPRITES = os.path.join(SPRITES_DIR, "endscreen sprites")
+
 # Кольори (якщо знадобляться)
 BG_COLOR = (255, 255, 255)
 
