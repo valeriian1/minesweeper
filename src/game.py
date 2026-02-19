@@ -13,7 +13,7 @@ class Game:
         pygame.init()
         
         # Визначаємо початкову складність
-        self.difficulty = "easy"
+        self.difficulty = difficulty
         self.best_time = 0
         
         self.running = True
