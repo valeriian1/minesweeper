@@ -60,7 +60,7 @@ class EventHandler:
         return pos[1] < HEADER_HEIGHT
 
     def _handle_menu_interaction(self, pos):
-        """Обробка вибору в меню складності."""
+        """Обробка вибору в меню складності, вибираємо варіант з айтемів класу рендерер."""
         for opt, rect in self.game.renderer.menu_rects.items():
             if rect.collidepoint(pos):
                 self.game.difficulty = opt
@@ -80,7 +80,8 @@ class EventHandler:
 
     def _open_cell(self, row, col):
         """
-        Логіка відкриття клітинки з урахуванням першого ходу та мін.
+        Логіка відкриття клітинки з урахуванням першого ходу, 
+        наявності або відсутності міни.
         """
         cell = self.game.board.grid[row][col]
         if cell.is_flagged or cell.is_open:
@@ -98,7 +99,7 @@ class EventHandler:
             self._check_victory_condition()
 
     def _generate_board_after_first_click(self, row, col):
-        """Генерація мін та запуск таймера."""
+        """Генерація мін та запуск таймера після початку гри."""
         self.game.board.place_mines(safe_row=row, safe_col=col)
         self.game.board.calculate_neighbors()
         self.game.first_click = False
@@ -108,5 +109,6 @@ class EventHandler:
         """Перевірка перемоги та оновлення рекорду."""
         if self.game.board.check_win():
             self.game.won = True
+            # Оновлюємо рекорд, якщо поточний час кращий за попередній або не дорівнює 0
             if self.game.best_time == 0 or self.game.elapsed_time < self.game.best_time:
                 self.game.best_time = self.game.elapsed_time

@@ -81,6 +81,7 @@ class Game:
             
         pygame.display.flip()
 
+    # Визиваємо всі методи тут в головному циклі
     def run(self):
         clock = pygame.time.Clock()
         while self.running:
