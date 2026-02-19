@@ -1,11 +1,11 @@
 class Cell:
     def __init__(self, col: int, row: int):
         """
-        Initialize a Cell with its grid coordinates.
+        Ініціалізує комірку з координатами на сітці.
 
         Args:
-            col: The column index.
-            row: The row index.
+            col: Індекс стовпця.
+            row: Індекс рядка.
         """
         self.col = col
         self.row = row
@@ -16,17 +16,17 @@ class Cell:
 
     def toggle_flag(self) -> None:
         """
-        Toggles the flagged state of the cell if it is not open.
+        Перемикає стан прапорця комірки, якщо вона не відкрита.
         """
         if not self.is_open:
             self.is_flagged = not self.is_flagged
 
     def reveal(self) -> bool:
         """
-        Reveals the cell if it is not flagged or already open.
+        Відкриває комірку, якщо вона не позначена прапорцем і ще не відкрита.
 
         Returns:
-            True if the cell was successfully opened, False if it was already open or flagged.
+            True, якщо комірку було успішно відкрито, False — якщо вона вже відкрита або позначена.
         """
         if self.is_flagged or self.is_open:
             return False
