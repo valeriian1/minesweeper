@@ -1,279 +1,238 @@
 import pygame
-import os
 
-from src.utils.constants import DIFFICULTIES, BOARD_SPRITES, HEADER_SPRITES, ENDSCREEN_SPRITES
+from src.ui.assets import AssetManager
+from src.utils.constants import (
+    DIFFICULTIES,
+    CLOSED_CELL_COLOR, CLOSED_CELL_ALPHA,
+    OVERLAY_COLOR, OVERLAY_ALPHA,
+    ANIM_INTERVAL_HEADER, ANIM_INTERVAL_ENDSCREEN,
+    DIGIT_WIDTH,
+)
+
 
 class GameRenderer:
+    """
+    Відповідає за відображення всіх ігрових елементів:
+    поля, хедера, меню складності та екрану кінця гри.
+    """
 
-    def load_frames(self, path, name_prefix, start_index, end_index):
+    def __init__(self, screen: pygame.Surface, cell_size: int, header_h: int):
         """
-        Завантажує n кадрів з папки за шаблоном назви
-        
-        Args:
-            path (str): Шлях до папки з кадрами.
-            name_prefix (str): Загальна частина назви файлів кадрів (без номера та розширення).
-            start_index (int): Початковий номер кадру.
-            end_index (int): Кількість кадрів для завантаження.
-        Returns:
-            list: Список завантажених кадрів у вигляді pygame.Surface.
-        """
-        frames = []
-        for i in range(start_index, start_index + end_index):
-            full_path = os.path.join(path, f"{name_prefix}{i}.png")
-            img = pygame.image.load(full_path).convert_alpha()
-            frames.append(img)
-        return frames
-        
-
-    def __init__(self, screen, cell_size, header_h):
-        """
-        Ініціалізує рендерер: завантажує ресурси та налаштовує параметри відображення
+        Ініціалізує рендерер: завантажує ресурси та налаштовує параметри відображення.
 
         Args:
-            screen (pygame.Surface): Поверхня для малювання гри.
-            cell_size (int): Розмір однієї клітинки в пікселях.
-            header_h (int): Висота верхньої панелі.
+            screen: Поверхня для малювання гри.
+            cell_size: Розмір однієї клітинки в пікселях.
+            header_h: Висота верхньої панелі.
         """
         self.screen = screen
         self.cell_size = cell_size
         self.header_h = header_h
 
-        # Створюємо напівпрозору маску для закритих клітинок
+        # Завантажуємо всі спрайти через AssetManager
+        self.assets = AssetManager(cell_size)
+
+        # Напівпрозора маска для закритих клітинок
         self.closed_mask = pygame.Surface((self.cell_size, self.cell_size))
+        self.closed_mask.set_alpha(CLOSED_CELL_ALPHA)
+        self.closed_mask.fill(CLOSED_CELL_COLOR)
 
-        self.closed_mask.set_alpha(110)
-        self.closed_mask.fill((55, 50, 200))
+        # Оверлей кінця гри (розмір = розмір вікна)
+        sw, sh = screen.get_size()
+        self.overlay = pygame.Surface((sw, sh))
+        self.overlay.set_alpha(OVERLAY_ALPHA)
+        self.overlay.fill(OVERLAY_COLOR)
 
-        # Створюємо напівпрозору чорну оверлей поверх всього екрану (для віконця кінець гри)
-        self.overlay = pygame.Surface((1000, 1000))
-        self.overlay.set_alpha(180)
-        self.overlay.fill((0, 0, 0))
+        # Кнопка рестарту — ініціалізуємо порожнім ректом
+        self.btn_rect = pygame.Rect(0, 0, 0, 0)
 
-        # Спрайти для клітинок
-        raw_sprites = {
-            'tile1': "gridTile1.png", 'tile2': "gridTile2.png",
-            'mine': "TileMine.png", 'flag': "TileFlagRed.png",
-            'tile1a': "Tile1a.png", 'tile2a': "Tile2a.png",
-            'tile3a': "Tile3a.png", 'tile4a': "Tile4a.png",
-            'tile5a': "Tile5a.png", 'tile6a': "Tile6a.png",
-            'tile7a': "Tile7a.png", 'tile8a': "Tile8a.png"
-        }
-        self.sprites = {
-            # Масштабуємо спрайти до розміру клітинки
-            k: pygame.transform.scale(
-                pygame.image.load(os.path.join(BOARD_SPRITES, v)).convert_alpha(), 
-                (self.cell_size, self.cell_size)
-            ) for k, v in raw_sprites.items()
-        }        
+        # Прямокутники пунктів меню складності
+        self.menu_rects: dict[str, pygame.Rect] = {}
 
-        # Хедер
-        self.header_frames = self.load_frames(HEADER_SPRITES, "frame_v", 1, 2)
-        self.icon_flag = self.load_frames(HEADER_SPRITES, "Flag", 1, 2)
-        self.icon_clock = self.load_frames(HEADER_SPRITES, "Clock", 1, 2)
-        self.board_line = self.load_frames(HEADER_SPRITES, "boardLine", 1, 2)
-        self.header_digits = self.load_frames(HEADER_SPRITES, "Timer", 0, 10)
-        self.drop_menu_frames = self.load_frames(HEADER_SPRITES, "drop_menu", 1, 2)
-        self.selected_menu = pygame.image.load(os.path.join(HEADER_SPRITES, "selected_menu.png")).convert_alpha()
-        self.diff_labels = {
-            k: pygame.image.load(os.path.join(HEADER_SPRITES, f"label_{k}.png")).convert_alpha()
-            for k in DIFFICULTIES.keys()
-        }
+    # ── Допоміжні методи ──────────────────────────────────────────
 
-        # Екран закінчення гри
-        self.endscreen_frames = self.load_frames(ENDSCREEN_SPRITES, "window", 1, 2)
-        self.trophy_frames = self.load_frames(ENDSCREEN_SPRITES, "trophy", 1, 2)
-        self.skull_frames = self.load_frames(ENDSCREEN_SPRITES, "skull", 1, 2)
-        self.smiley_frames = self.load_frames(ENDSCREEN_SPRITES, "smileyFace", 1, 2)
-        self.restart_btn_frames = self.load_frames(ENDSCREEN_SPRITES, "restart_btn", 1, 2)
-    
-    def get_cell_from_pos(self, pos):
+    def _get_frame_index(self, interval_ms: int) -> int:
+        """Повертає індекс кадру анімації (0 або 1) з заданим інтервалом."""
+        return (pygame.time.get_ticks() // interval_ms) % 2
+
+    def get_cell_from_pos(self, pos: tuple[int, int]) -> tuple[int, int] | None:
         """
         Перетворює координати кліку миші (x, y) у логічні координати сітки (row, col).
         Повертає None, якщо клік був у зоні хедера.
 
         Args:
-            pos (tuple): Кортеж (x, y) з координатами кліку миші.
+            pos: Кортеж (x, y) з координатами кліку миші.
         """
         x, y = pos
-        if y < self.header_h: 
+        if y < self.header_h:
             return None
         return (y - self.header_h) // self.cell_size, x // self.cell_size
 
+    # ── Ігрове поле ───────────────────────────────────────────────
+
     def draw_board(self, board_obj):
-        """ 
-        Відображає ігрове поле на основі стану об'єкта Board. 
-        Args:
-            board_obj (Board): Об'єкт, що містить інформацію про клітинки
         """
+        Відображає ігрове поле на основі стану об'єкта Board.
+
+        Args:
+            board_obj: Об'єкт Board з інформацією про клітинки.
+        """
+        sprites = self.assets.board
         for r in range(board_obj.rows):
             for c in range(board_obj.cols):
-                cell = board_obj.grid[r][c] # беремо об'єкт клітинки
+                cell = board_obj.grid[r][c]
                 x = c * self.cell_size
                 y = r * self.cell_size + self.header_h
-                
+
                 base_key = 'tile1' if (r + c) % 2 == 0 else 'tile2'
-                self.screen.blit(self.sprites[base_key], (x, y))
-                
-                # Якщо клітинка відкрита
+                self.screen.blit(sprites[base_key], (x, y))
+
                 if cell.is_open:
                     if cell.is_mine:
-                        self.screen.blit(self.sprites['mine'], (x, y))
+                        self.screen.blit(sprites['mine'], (x, y))
                     elif cell.adjacent_mines > 0:
-                        self.screen.blit(self.sprites[f'tile{cell.adjacent_mines}a'], (x, y))
-                
-                # Якщо клітинка закрита
+                        self.screen.blit(sprites[f'tile{cell.adjacent_mines}a'], (x, y))
                 else:
                     self.screen.blit(self.closed_mask, (x, y))
-                    # Якщо стоїть прапорець
                     if cell.is_flagged:
-                        self.screen.blit(self.sprites['flag'], (x, y))
-    
-    def draw_header(self, mines_count, time_seconds, difficulty):
+                        self.screen.blit(sprites['flag'], (x, y))
+
+    # ── Хедер ─────────────────────────────────────────────────────
+
+    def draw_header(self, mines_count: int, time_seconds: int, difficulty: str):
         """
-        Відображає верхню панель гри: кнопку вибору складності, 
+        Відображає верхню панель гри: кнопку вибору складності,
         лічильник мін та таймер.
 
         Args:
-            mines_count (int): Поточна кількість мін, що залишилися.
-            time_seconds (int): Час, що минув з початку гри, у секундах.
-            difficulty (str): Поточний рівень складності.
+            mines_count: Поточна кількість мін, що залишилися.
+            time_seconds: Час, що минув з початку гри, у секундах.
+            difficulty: Поточний рівень складності.
         """
         sw = self.screen.get_width()
         center_x = sw // 2
-        # Визначаємо поточний кадр анімації (зміна кожні 400 мс)
-        frame_idx = (pygame.time.get_ticks() // 400) % 2
-        
+        frame_idx = self._get_frame_index(ANIM_INTERVAL_HEADER)
+
         # Анімована лінія під хедером
-        current_line = self.board_line[frame_idx]
+        current_line = self.assets.board_line[frame_idx]
         scaled_line = pygame.transform.scale(current_line, (sw, 20))
         self.screen.blit(scaled_line, (0, self.header_h - 9))
 
         # Кнопка складності
-        self.screen.blit(self.header_frames[frame_idx], (10, 15))
-        self.screen.blit(self.diff_labels[difficulty], (10, 15))
+        self.screen.blit(self.assets.header_frames[frame_idx], (10, 15))
+        self.screen.blit(self.assets.diff_labels[difficulty], (10, 15))
 
         # Лічильник бомб та іконка прапорця
         bomb_x = center_x - 60
-        self.screen.blit(self.icon_flag[frame_idx], (bomb_x, 19))
-        self.draw_header_number(mines_count, bomb_x + 35, 20)
+        self.screen.blit(self.assets.icon_flag[frame_idx], (bomb_x, 19))
+        self._draw_number(mines_count, bomb_x + 35, 20)
 
         # Таймер
         timer_x = center_x + 50
-        self.screen.blit(self.icon_clock[frame_idx], (timer_x, 19))
-        self.draw_header_number(time_seconds, timer_x + 35, 20)
+        self.screen.blit(self.assets.icon_clock[frame_idx], (timer_x, 19))
+        self._draw_number(time_seconds, timer_x + 35, 20)
 
-    def draw_header_number(self, value, x, y):
+    def _draw_number(self, value: int, x: int, y: int):
         """
-        Малює числа у хедері
+        Малює трицифрове число з провідними нулями.
 
         Args:
-            value (int): Число для відображення (кількість мін або часу)
-            x (int): X-координата початку відображення числа
-            y (int): Y-координата початку відображення числа
+            value: Число для відображення (обмежується 0–999).
+            x: X-координата початку.
+            y: Y-координата початку.
         """
-        val = max(0, min(999, value)) # Обмежуємо від 0 до 999
-        # Перетворюємо число в рядок з провідними нулями до 3 цифр
+        val = max(0, min(999, value))
         s_value = str(val).zfill(3)
         for i, digit in enumerate(s_value):
-            self.screen.blit(self.header_digits[int(digit)], (x + i * 19, y))
+            self.screen.blit(self.assets.header_digits[int(digit)], (x + i * DIGIT_WIDTH, y))
 
-    def draw_end_screen(self, status, current_time, best_time):
+    # ── Екран кінця гри ──────────────────────────────────────────
+
+    def draw_end_screen(self, status: str, current_time: int, best_time: int):
         """
         Відображає вікно кінця гри (перемога або поразка).
-    
+
         Args:
-            status (str): "win" або "lose" для визначення типу кінцевого екрану.
-            current_time (int): Час, витрачений на поточну гру.
-            best_time (int): Найкращий час сесії для поточного рівня складності.
+            status: "win" або "lose" для визначення типу кінцевого екрану.
+            current_time: Час, витрачений на поточну гру.
+            best_time: Найкращий час сесії.
         """
         sw = self.screen.get_width()
         sh = self.screen.get_height()
-        
-        # Затемнення поля
+
+        # Затемнення
         self.screen.blit(self.overlay, (0, 0))
-        
-        # Визначаємо індекс кадру (кожні 500 мс)
-        frame_idx = (pygame.time.get_ticks() // 500) % 2
-        
-        # Малюємо базове вікно
-        win_img = self.endscreen_frames[frame_idx]
+
+        frame_idx = self._get_frame_index(ANIM_INTERVAL_ENDSCREEN)
+
+        # Базове вікно
+        win_img = self.assets.endscreen_frames[frame_idx]
         win_x = (sw - win_img.get_width()) // 2
         win_y = (sh - win_img.get_height()) // 2
         self.screen.blit(win_img, (win_x, win_y))
-        
-        # Малюємо іконки для поточного та найкращого часу
-        self.screen.blit(self.trophy_frames[frame_idx], (win_x, win_y))
-        self.screen.blit(self.icon_clock[frame_idx], (win_x + 40, win_y + 65))
-        
-        # Малюємо череп (при програші)
+
+        # Іконки
+        self.screen.blit(self.assets.trophy_frames[frame_idx], (win_x, win_y))
+        self.screen.blit(self.assets.icon_clock[frame_idx], (win_x + 40, win_y + 65))
+
+        # Статус
         if status == 'lose':
-            self.screen.blit(self.skull_frames[frame_idx], (win_x, win_y))
-        # Малюємо усміхнене личко (при перемозі)
+            self.screen.blit(self.assets.skull_frames[frame_idx], (win_x, win_y))
         else:
-             self.screen.blit(self.smiley_frames[frame_idx], (win_x, win_y))
-        
-        # Малюємо цифри
-        # Поточний результат
-        self.draw_header_number(current_time, win_x + 20, win_y + 110)
-        
-        # Найкращий результат сесії
-        self.draw_header_number(best_time, win_x + 180, win_y + 110)
+            self.screen.blit(self.assets.smiley_frames[frame_idx], (win_x, win_y))
 
-        # кнопка RESTART
+        # Цифри
+        self._draw_number(current_time, win_x + 20, win_y + 110)
+        self._draw_number(best_time, win_x + 180, win_y + 110)
+
+        # Кнопка RESTART
         mouse_pos = pygame.mouse.get_pos()
-        # Розраховуємо позицію кнопки
-        self.btn_rect = pygame.Rect(win_x+110, win_y+110, 75, 50)
-        
-        # Перевірка: чи наведена миша на кнопку
-        if self.btn_rect.collidepoint(mouse_pos):
-            btn_img = self.restart_btn_frames[1]
-            draw_x = self.btn_rect.x-10
-            draw_y = self.btn_rect.y
-        else:
-            btn_img = self.restart_btn_frames[0]
-            draw_x = self.btn_rect.x-2
-            draw_y = self.btn_rect.y
-            
-        self.screen.blit(btn_img, (draw_x, draw_y))
+        self.btn_rect = pygame.Rect(win_x + 110, win_y + 110, 75, 50)
 
-    def is_restart_clicked(self, pos):
-        """ 
+        if self.btn_rect.collidepoint(mouse_pos):
+            btn_img = self.assets.restart_btn_frames[1]
+            draw_x = self.btn_rect.x - 10
+        else:
+            btn_img = self.assets.restart_btn_frames[0]
+            draw_x = self.btn_rect.x - 2
+
+        self.screen.blit(btn_img, (draw_x, self.btn_rect.y))
+
+    def is_restart_clicked(self, pos: tuple[int, int]) -> bool:
+        """
         Перевіряє, чи клік був по кнопці рестарту.
 
         Args:
-            pos (tuple): Кортеж (x, y) з координатами кліку миші.
-        Returns:
-            bool: True, якщо клік був по кнопці
-        """
-        return hasattr(self, 'btn_rect') and self.btn_rect.collidepoint(pos)
-    
-    def draw_difficulty_menu(self):
-        """
-          Відображає випадаюче меню вибору складності.
-        """
-        mouse_pos = pygame.mouse.get_pos()
-        frame_idx = (pygame.time.get_ticks() // 400) % 2
+            pos: Кортеж (x, y) з координатами кліку миші.
 
-        # Позиція плашки меню
-        menu_x, menu_y = 10, 16 
-        self.screen.blit(self.drop_menu_frames[frame_idx], (menu_x, menu_y))
+        Returns:
+            True, якщо клік був по кнопці рестарту.
+        """
+        return self.btn_rect.collidepoint(pos)
+
+    # ── Меню складності ──────────────────────────────────────────
+
+    def draw_difficulty_menu(self):
+        """Відображає випадаюче меню вибору складності."""
+        mouse_pos = pygame.mouse.get_pos()
+        frame_idx = self._get_frame_index(ANIM_INTERVAL_HEADER)
+
+        menu_x, menu_y = 10, 16
+        self.screen.blit(self.assets.drop_menu_frames[frame_idx], (menu_x, menu_y))
 
         options = list(DIFFICULTIES.keys())
         self.menu_rects = {}
-        
-        start_y_offset = 31  
-        line_spacing = 35 
+
+        start_y_offset = 31
+        line_spacing = 35
 
         for i, opt in enumerate(options):
             opt_y = menu_y + start_y_offset + (i * line_spacing)
-            
-            # Зона кліку
+
             rect = pygame.Rect(menu_x, opt_y, 120, line_spacing)
             self.menu_rects[opt] = rect
 
-            # Ефект наведення
             if rect.collidepoint(mouse_pos):
-                # Малюємо виділення
-                self.screen.blit(self.selected_menu, (rect.x, rect.y-5))
+                self.screen.blit(self.assets.selected_menu, (rect.x, rect.y - 5))
 
-            self.screen.blit(self.diff_labels[opt], (rect.x + 5, rect.y))
+            self.screen.blit(self.assets.diff_labels[opt], (rect.x + 5, rect.y))

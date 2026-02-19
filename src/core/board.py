@@ -22,12 +22,12 @@ class Board:
         Get the cell at the specified position.
 
         Args:
-            pos: A tuple containing the (col, row) coordinates.
+            pos: A tuple containing the (row, col) coordinates.
 
         Returns:
             The cell object at the specified coordinates.
         """
-        col, row = pos
+        row, col = pos
         return self.grid[row][col]
 
     def _create_grid(self) -> list[list[Cell]]:
@@ -39,19 +39,40 @@ class Board:
         """
         return [[Cell(col, row) for col in range(self.cols)] for row in range(self.rows)]
 
-    def place_mines(self, safe_col: int | None = None, safe_row: int | None = None) -> None:
+    def _get_neighbors(self, row: int, col: int) -> list[tuple[int, int]]:
+        """
+        Get valid neighboring coordinates for the given cell position.
+
+        Args:
+            row: The row of the target cell.
+            col: The column of the target cell.
+
+        Returns:
+            A list of (row, col) tuples of valid neighbor positions.
+        """
+        neighbors = []
+        for dr in range(-1, 2):
+            for dc in range(-1, 2):
+                if dr == 0 and dc == 0:
+                    continue
+                nr, nc = row + dr, col + dc
+                if 0 <= nr < self.rows and 0 <= nc < self.cols:
+                    neighbors.append((nr, nc))
+        return neighbors
+
+    def place_mines(self, safe_row: int | None = None, safe_col: int | None = None) -> None:
         """
         Randomly place mines on the board, avoiding the safe zone around the first click.
 
         Args:
-            safe_col: The column of the safe zone (first click).
             safe_row: The row of the safe zone (first click).
+            safe_col: The column of the safe zone (first click).
 
         Raises:
             ValueError: If mines_count exceeds the number of available cells.
         """
         total_cells = self.rows * self.cols
-        safe_zone_size = 9 if (safe_col is not None and safe_row is not None) else 0
+        safe_zone_size = 9 if (safe_row is not None and safe_col is not None) else 0
         available_cells = total_cells - safe_zone_size
 
         if self.mines_count > available_cells:
@@ -64,8 +85,8 @@ class Board:
             col = random.randint(0, self.cols - 1)
             row = random.randint(0, self.rows - 1)
 
-            if safe_col is not None and safe_row is not None:
-                if abs(col - safe_col) <= 1 and abs(row - safe_row) <= 1:
+            if safe_row is not None and safe_col is not None:
+                if abs(row - safe_row) <= 1 and abs(col - safe_col) <= 1:
                     continue
 
             cell = self.grid[row][col]
@@ -92,34 +113,25 @@ class Board:
         Returns:
             The number of adjacent mines.
         """
-        count = 0
-        for di in range(-1, 2):
-            for dj in range(-1, 2):
-                if di == 0 and dj == 0:
-                    continue
+        return sum(
+            self.grid[nr][nc].is_mine
+            for nr, nc in self._get_neighbors(cell.row, cell.col)
+        )
 
-                neighbor_col = cell.col + di
-                neighbor_row = cell.row + dj
-
-                if 0 <= neighbor_col < self.cols and 0 <= neighbor_row < self.rows:
-                    if self.grid[neighbor_row][neighbor_col].is_mine:
-                        count += 1
-        return count
-
-    def flood_fill(self, col: int, row: int) -> None:
+    def flood_fill(self, row: int, col: int) -> None:
         """
         Iteratively reveal empty cells starting from the given coordinates.
 
         Args:
-            col: The column to start from.
             row: The row to start from.
+            col: The column to start from.
         """
-        stack = [(col, row)]
+        stack = [(row, col)]
 
         while stack:
-            c, r = stack.pop()
+            r, c = stack.pop()
 
-            if not (0 <= c < self.cols and 0 <= r < self.rows):
+            if not (0 <= r < self.rows and 0 <= c < self.cols):
                 continue
 
             current_cell = self.grid[r][c]
@@ -128,11 +140,8 @@ class Board:
                 continue
 
             if current_cell.adjacent_mines == 0:
-                for di in range(-1, 2):
-                    for dj in range(-1, 2):
-                        if di == 0 and dj == 0:
-                            continue
-                        stack.append((c + di, r + dj))
+                for nr, nc in self._get_neighbors(r, c):
+                    stack.append((nr, nc))
 
     def reveal_all_mines(self) -> list[Cell]:
         """

@@ -9,8 +9,23 @@ BOARD_SPRITES = os.path.join(SPRITES_DIR, "board sprites")
 HEADER_SPRITES = os.path.join(SPRITES_DIR, "header sprites")
 ENDSCREEN_SPRITES = os.path.join(SPRITES_DIR, "endscreen sprites")
 
-# Кольори (якщо знадобляться)
+# Кольори та візуальні параметри
 BG_COLOR = (255, 255, 255)
+
+# Закрита клітинка (напівпрозора маска)
+CLOSED_CELL_COLOR = (55, 50, 200)
+CLOSED_CELL_ALPHA = 110
+
+# Оверлей кінця гри (затемнення)
+OVERLAY_COLOR = (0, 0, 0)
+OVERLAY_ALPHA = 180
+
+# Анімація — інтервал зміни кадрів (мс)
+ANIM_INTERVAL_HEADER = 400
+ANIM_INTERVAL_ENDSCREEN = 500
+
+# Хедер-дисплей — ширина однієї цифри
+DIGIT_WIDTH = 19
 
 # Налаштування рівнів складності
 DIFFICULTIES = {

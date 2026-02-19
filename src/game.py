@@ -3,6 +3,7 @@ import sys
 import time
 from src.core.board import Board
 from src.ui.renderer import GameRenderer
+from src.event_handler import EventHandler
 from src.utils.constants import DIFFICULTIES, HEADER_HEIGHT, BG_COLOR
 
 class Game:
@@ -13,7 +14,7 @@ class Game:
         pygame.init()
         
         # Визначаємо початкову складність
-        self.difficulty = "easy"
+        self.difficulty = difficulty
         self.best_time = 0
         
         self.running = True
@@ -38,6 +39,7 @@ class Game:
         # Ініціалізація основних об'єктів
         self.board = Board(self.rows, self.cols, self.mines_cnt)
         self.renderer = GameRenderer(self.screen, self.cell_sz, HEADER_HEIGHT)
+        self.event_handler = EventHandler(self)
         
         # Скидання ігрових станів
         self._reset_game_states()
@@ -50,100 +52,6 @@ class Game:
         self.menu_open = False
         self.start_time = 0
         self.elapsed_time = 0
-
-    def handle_events(self):
-        """
-        Обробка подій: вихід з гри та кліки миші
-        """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self._handle_mouse_click(event)
-
-    def _handle_mouse_click(self, event):
-        """
-        Розподіляє кліки між екраном закінчення гри, меню та ігровим полем
-        """
-        pos = pygame.mouse.get_pos()
-
-        # Якщо гра закінчена, перевіряємо клік по кнопці рестарту
-        if (self.game_over or self.won) and self.renderer.is_restart_clicked(pos):
-            self.setup_game()
-            return
-
-        # Якщо на зоні меню, відкриваємо його відповідно
-        if self.menu_open:
-            if self._handle_menu_interaction(pos):
-                return
-            self.menu_open = False
-            return
-
-        if self._is_header_clicked(pos):
-            if 10 <= pos[0] <= 110:
-                self.menu_open = not self.menu_open
-            return
-        
-        # Кліки по ігровому полю
-        if pos[1] >= HEADER_HEIGHT:
-            self._handle_grid_interaction(event, pos)
-
-    def _is_header_clicked(self, pos):
-        """Перевірка кліку в області хедера"""
-        return pos[1] < HEADER_HEIGHT
-
-    def _handle_menu_interaction(self, pos):
-        """Обробка вибору в меню складності"""
-        for opt, rect in self.renderer.menu_rects.items():
-            if rect.collidepoint(pos):
-                self.difficulty = opt
-                self.setup_game()
-                return True
-        return False
-
-    def _handle_grid_interaction(self, event, pos):
-        """Кліки по ігровому полю"""
-        grid_pos = self.renderer.get_cell_from_pos(pos)
-        if grid_pos:
-            r, c = grid_pos
-            if event.button == 1: # Ліва кнопка миші
-                self._open_cell(r, c)
-            elif event.button == 3: # Права кнопка миші
-                self.board.grid[r][c].toggle_flag()
-
-    def _open_cell(self, row, col):
-        """
-        Логіка відкриття клітинки з урахуванням першого ходу та мін
-        """
-        cell = self.board.grid[row][col]
-        if cell.is_flagged or cell.is_open:
-            return
-
-        # Генерація мін після першого кліку
-        if self.first_click:
-            self._generate_board_after_first_click(row, col)
-
-        if cell.is_mine:
-            self.game_over = True
-            self.board.reveal_all_mines()
-        else:
-            self.board.flood_fill(col, row)
-            self._check_victory_condition()
-
-    def _generate_board_after_first_click(self, row, col):
-        """Генерація мін та запуск таймера"""
-        self.board.place_mines(safe_col=col, safe_row=row)
-        self.board.calculate_neighbors()
-        self.first_click = False
-        self.start_time = time.time()
-
-    def _check_victory_condition(self):
-        """Перевірка перемоги та оновлення рекорду"""
-        if self.board.check_win():
-            self.won = True
-            if self.best_time == 0 or self.elapsed_time < self.best_time:
-                self.best_time = self.elapsed_time
 
     def update(self):
         """
@@ -176,7 +84,7 @@ class Game:
     def run(self):
         clock = pygame.time.Clock()
         while self.running:
-            self.handle_events()
+            self.event_handler.handle_events()
             self.update()
             self.draw()
             clock.tick(60)
