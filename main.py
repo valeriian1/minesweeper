@@ -1,5 +1,5 @@
 import argparse
-from src.game import Game
+from src.engine.game import Game
 from src.utils.constants import DIFFICULTIES
 
 def main():
