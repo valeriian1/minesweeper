@@ -10,7 +10,7 @@ class AssetManager:
     Надає єдину точку доступу до графічних ресурсів.
     """
 
-    def __init__(self, cell_size: int):
+    def __init__(self, cell_size):
         """
         Завантажує всі ресурси і масштабує їх до потрібного розміру.
 
@@ -46,7 +46,7 @@ class AssetManager:
         self.smiley_frames = self._load_frames(ENDSCREEN_SPRITES, "smileyFace", 1, 2)
         self.restart_btn_frames = self._load_frames(ENDSCREEN_SPRITES, "restart_btn", 1, 2)
 
-    def _load_board_sprites(self) -> dict[str, pygame.Surface]:
+    def _load_board_sprites(self):
         """Завантажує та масштабує спрайти ігрового поля."""
         raw_sprites = {
             'tile1': "gridTile1.png", 'tile2': "gridTile2.png",
@@ -64,8 +64,7 @@ class AssetManager:
             for k, v in raw_sprites.items()
         }
 
-    @staticmethod
-    def _load_frames(path: str, name_prefix: str, start_index: int, count: int) -> list[pygame.Surface]:
+    def _load_frames(self, path, name_prefix, start_index, count):
         """
         Завантажує послідовність кадрів з папки.
 

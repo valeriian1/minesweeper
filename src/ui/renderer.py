@@ -9,14 +9,13 @@ from src.utils.constants import (
     DIGIT_WIDTH,
 )
 
-
 class GameRenderer:
     """
     Відповідає за відображення всіх ігрових елементів:
     поля, хедера, меню складності та екрану кінця гри.
     """
 
-    def __init__(self, screen: pygame.Surface, cell_size: int, header_h: int):
+    def __init__(self, screen, cell_size, header_h):
         """
         Ініціалізує рендерер: завантажує ресурси та налаштовує параметри відображення.
 
@@ -49,13 +48,11 @@ class GameRenderer:
         # Прямокутники пунктів меню складності
         self.menu_rects: dict[str, pygame.Rect] = {}
 
-    # ── Допоміжні методи ──────────────────────────────────────────
-
-    def _get_frame_index(self, interval_ms: int) -> int:
+    def _get_frame_index(self, interval_ms):
         """Повертає індекс кадру анімації (0 або 1) з заданим інтервалом."""
         return (pygame.time.get_ticks() // interval_ms) % 2
 
-    def get_cell_from_pos(self, pos: tuple[int, int]) -> tuple[int, int] | None:
+    def get_cell_from_pos(self, pos):
         """
         Перетворює координати кліку миші (x, y) у логічні координати сітки (row, col).
         Повертає None, якщо клік був у зоні хедера.
@@ -67,8 +64,6 @@ class GameRenderer:
         if y < self.header_h:
             return None
         return (y - self.header_h) // self.cell_size, x // self.cell_size
-
-    # ── Ігрове поле ───────────────────────────────────────────────
 
     def draw_board(self, board_obj):
         """
@@ -97,9 +92,7 @@ class GameRenderer:
                     if cell.is_flagged:
                         self.screen.blit(sprites['flag'], (x, y))
 
-    # ── Хедер ─────────────────────────────────────────────────────
-
-    def draw_header(self, mines_count: int, time_seconds: int, difficulty: str):
+    def draw_header(self, mines_count, time_seconds, difficulty):
         """
         Відображає верхню панель гри: кнопку вибору складності,
         лічильник мін та таймер.
@@ -132,7 +125,7 @@ class GameRenderer:
         self.screen.blit(self.assets.icon_clock[frame_idx], (timer_x, 19))
         self._draw_number(time_seconds, timer_x + 35, 20)
 
-    def _draw_number(self, value: int, x: int, y: int):
+    def _draw_number(self, value, x, y):
         """
         Малює трицифрове число з провідними нулями.
 
@@ -146,9 +139,7 @@ class GameRenderer:
         for i, digit in enumerate(s_value):
             self.screen.blit(self.assets.header_digits[int(digit)], (x + i * DIGIT_WIDTH, y))
 
-    # ── Екран кінця гри ──────────────────────────────────────────
-
-    def draw_end_screen(self, status: str, current_time: int, best_time: int):
+    def draw_end_screen(self, status, current_time, best_time):
         """
         Відображає вікно кінця гри (перемога або поразка).
 
@@ -171,17 +162,17 @@ class GameRenderer:
         win_y = (sh - win_img.get_height()) // 2
         self.screen.blit(win_img, (win_x, win_y))
 
-        # Іконки
+        # Іконки годинника та трофея
         self.screen.blit(self.assets.trophy_frames[frame_idx], (win_x, win_y))
         self.screen.blit(self.assets.icon_clock[frame_idx], (win_x + 40, win_y + 65))
 
-        # Статус
+        # В залежності від статусу кінця гри - череп або усміхнене обличчя
         if status == 'lose':
             self.screen.blit(self.assets.skull_frames[frame_idx], (win_x, win_y))
         else:
             self.screen.blit(self.assets.smiley_frames[frame_idx], (win_x, win_y))
 
-        # Цифри
+        # Найкращий час та поточний час
         self._draw_number(current_time, win_x + 20, win_y + 110)
         self._draw_number(best_time, win_x + 180, win_y + 110)
 
@@ -198,7 +189,7 @@ class GameRenderer:
 
         self.screen.blit(btn_img, (draw_x, self.btn_rect.y))
 
-    def is_restart_clicked(self, pos: tuple[int, int]) -> bool:
+    def is_restart_clicked(self, pos):
         """
         Перевіряє, чи клік був по кнопці рестарту.
 
@@ -209,8 +200,6 @@ class GameRenderer:
             True, якщо клік був по кнопці рестарту.
         """
         return self.btn_rect.collidepoint(pos)
-
-    # ── Меню складності ──────────────────────────────────────────
 
     def draw_difficulty_menu(self):
         """Відображає випадаюче меню вибору складності."""
