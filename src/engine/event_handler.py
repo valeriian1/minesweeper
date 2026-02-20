@@ -39,7 +39,7 @@ class EventHandler:
             self.game.setup_game()
             return
 
-        # Якщо на зоні меню, відкриваємо його відповідно
+        # Якщо на зоні меню, визиваємо метод вибору складності
         if self.game.menu_open:
             if self._handle_menu_interaction(pos):
                 return
@@ -47,6 +47,7 @@ class EventHandler:
             return
 
         if self._is_header_clicked(pos):
+            # Якщо клік відбувся десь в межах кнопки меню, відкриваємо меню відповідно
             if 10 <= pos[0] <= 110:
                 self.game.menu_open = not self.game.menu_open
             return
@@ -69,10 +70,13 @@ class EventHandler:
         return False
 
     def _handle_grid_interaction(self, event, pos):
-        """Кліки по ігровому полю."""
+        """Кліки по ігровому полю. Ліва кнопка миші це відкриття клітинки, права це прапорець."""
+
         grid_pos = self.game.renderer.get_cell_from_pos(pos)
+
         if grid_pos:
             r, c = grid_pos
+
             if event.button == 1:  # Ліва кнопка миші
                 self._open_cell(r, c)
             elif event.button == 3:  # Права кнопка миші
@@ -81,13 +85,16 @@ class EventHandler:
     def _open_cell(self, row, col):
         """
         Логіка відкриття клітинки з урахуванням першого ходу, 
-        наявності або відсутності міни.
+        поведінка при відкритті клітики з міною або без міни.
         """
         cell = self.game.board.grid[row][col]
+
+        # Якщо э прапорець на клітинці 
+        # або відкрита клітинка то ніяк не реагуємо на клік
         if cell.is_flagged or cell.is_open:
             return
 
-        # Генерація мін після першого кліку
+        # Генерація мін та запуск таймеру після першого кліку
         if self.game.first_click:
             self._generate_board_after_first_click(row, col)
 
@@ -109,6 +116,10 @@ class EventHandler:
         """Перевірка перемоги та оновлення рекорду."""
         if self.game.board.check_win():
             self.game.won = True
-            # Оновлюємо рекорд, якщо поточний час кращий за попередній або не дорівнює 0
-            if self.game.best_time == 0 or self.game.elapsed_time < self.game.best_time:
+            self._update_best_time()
+
+    def _update_best_time(self):
+        """Оновлюємо рекорд, якщо поточний час кращий за попередній або не дорівнює 0"""
+        if self.game.best_time == 0 or self.game.elapsed_time < self.game.best_time:
                 self.game.best_time = self.game.elapsed_time
+
