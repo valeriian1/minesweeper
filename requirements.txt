@@ -1,0 +1,5 @@
+pygame-ce==2.5.6
+pytest==9.0.2
+flake8==7.3.0
+pytest-html
+flake8-html

@@ -1,0 +1,46 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint with flake8
+      run: |
+        # Generate HTML report for flake8. We use --exit-zero so the step doesn't fail even if there are linting errors, allowing tests to run and upload to proceed.
+        # Alternatively, if you want linting to fail the build, you can remove --exit-zero, but we need reports for both!
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --format=html --htmldir=flake8-report
+
+    - name: Test with pytest
+      env:
+        PYTHONPATH: .
+      run: |
+        # Run pytest and generate self-contained HTML report
+        pytest --html=pytest-report.html --self-contained-html
+
+    - name: Upload Test and Lint Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ci-reports
+        path: |
+          flake8-report/
+          pytest-report.html
