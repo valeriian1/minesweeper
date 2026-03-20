@@ -17,7 +17,6 @@ class Board:
         self.mines_count = mines_count
         self.grid = self._create_grid()
 
-
     def _create_grid(self) -> list[list[Cell]]:
         grid = []
         for row in range(self.rows):
@@ -35,13 +34,15 @@ class Board:
                     continue
                 neighbor_row = row + delta_row
                 neighbor_col = col + delta_col
-                if 0 <= neighbor_row < self.rows and 0 <= neighbor_col < self.cols:
+                if (0 <= neighbor_row < self.rows and
+                        0 <= neighbor_col < self.cols):
                     neighbors.append((neighbor_row, neighbor_col))
         return neighbors
 
     def place_mines(self, safe_row, safe_col) -> None:
         """
-        Випадково розміщує міни на полі, уникаючи безпечної зони навколо першого кліку.
+        Випадково розміщує міни на полі, уникаючи безпечної зони
+        навколо першого кліку.
 
         Args:
             safe_row: Рядок першого кліку.
@@ -73,7 +74,8 @@ class Board:
     def _count_adjacent_mines(self, cell: Cell) -> int:
 
         count = 0
-        for neighbor_row, neighbor_col in self._get_neighbors(cell.row, cell.col):
+        for (neighbor_row, neighbor_col) in self._get_neighbors(
+                cell.row, cell.col):
             if self.grid[neighbor_row][neighbor_col].is_mine:
                 count += 1
         return count
@@ -93,7 +95,8 @@ class Board:
             current_cell = self.grid[current_row][current_col]
 
             if current_cell.reveal() and current_cell.adjacent_mines == 0:
-                for neighbor_row, neighbor_col in self._get_neighbors(current_row, current_col):
+                for neighbor_row, neighbor_col in self._get_neighbors(
+                        current_row, current_col):
                     stack.append((neighbor_row, neighbor_col))
 
     def reveal_all_mines(self) -> None:
