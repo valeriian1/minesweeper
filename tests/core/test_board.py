@@ -3,6 +3,16 @@ from src.core.board import Board
 from src.core.cell import Cell
 
 
+@pytest.fixture
+def board_10x10():
+    return Board(rows=10, cols=10, mines_count=10)
+
+
+@pytest.fixture
+def empty_board_3x3():
+    return Board(rows=3, cols=3, mines_count=0)
+
+
 def test_board_initialization():
     board = Board(rows=10, cols=15, mines_count=20)
     assert board.rows == 10
@@ -15,11 +25,15 @@ def test_board_initialization():
 
 def test_get_neighbors():
     board = Board(rows=5, cols=5, mines_count=5)
-    
+
     # Middle cell
     neighbors_middle = board._get_neighbors(2, 2)
     assert len(neighbors_middle) == 8
-    expected_middle = [(1, 1), (1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2), (3, 3)]
+    expected_middle = [
+        (1, 1), (1, 2), (1, 3),
+        (2, 1), (2, 3),
+        (3, 1), (3, 2), (3, 3)
+    ]
     for n in expected_middle:
         assert n in neighbors_middle
 
@@ -31,67 +45,64 @@ def test_get_neighbors():
         assert n in neighbors_corner
 
 
-def test_place_mines():
-    board = Board(rows=10, cols=10, mines_count=10)
-    board.place_mines(safe_row=5, safe_col=5)
-    
-    mines_placed = sum(cell.is_mine for row in board.grid for cell in row)
+def test_place_mines(board_10x10):
+    board_10x10.place_mines(safe_row=5, safe_col=5)
+
+    mines_placed = sum(
+        cell.is_mine for row in board_10x10.grid for cell in row
+    )
     assert mines_placed == 10
-    
+
     # Check safe zone: 3x3 area around (5,5) should not have mines
     for row in range(4, 7):
         for col in range(4, 7):
-            assert not board.grid[row][col].is_mine
+            assert not board_10x10.grid[row][col].is_mine
 
 
-def test_calculate_neighbors():
-    board = Board(rows=3, cols=3, mines_count=0)
-    board.grid[1][1].is_mine = True
-    board.calculate_neighbors()
-    
-    assert board.grid[0][0].adjacent_mines == 1
-    assert board.grid[0][1].adjacent_mines == 1
-    assert board.grid[0][2].adjacent_mines == 1
-    assert board.grid[1][0].adjacent_mines == 1
-    assert board.grid[1][2].adjacent_mines == 1
-    assert board.grid[2][0].adjacent_mines == 1
-    assert board.grid[2][1].adjacent_mines == 1
-    assert board.grid[2][2].adjacent_mines == 1
+def test_calculate_neighbors(empty_board_3x3):
+    empty_board_3x3.grid[1][1].is_mine = True
+    empty_board_3x3.calculate_neighbors()
+
+    assert empty_board_3x3.grid[0][0].adjacent_mines == 1
+    assert empty_board_3x3.grid[0][1].adjacent_mines == 1
+    assert empty_board_3x3.grid[0][2].adjacent_mines == 1
+    assert empty_board_3x3.grid[1][0].adjacent_mines == 1
+    assert empty_board_3x3.grid[1][2].adjacent_mines == 1
+    assert empty_board_3x3.grid[2][0].adjacent_mines == 1
+    assert empty_board_3x3.grid[2][1].adjacent_mines == 1
+    assert empty_board_3x3.grid[2][2].adjacent_mines == 1
 
 
-def test_count_adjacent_mines():
-    board = Board(rows=3, cols=3, mines_count=0)
-    board.grid[0][0].is_mine = True
-    board.grid[0][1].is_mine = True
-    
-    cell = board.grid[1][0]
-    count = board._count_adjacent_mines(cell)
+def test_count_adjacent_mines(empty_board_3x3):
+    empty_board_3x3.grid[0][0].is_mine = True
+    empty_board_3x3.grid[0][1].is_mine = True
+
+    cell = empty_board_3x3.grid[1][0]
+    count = empty_board_3x3._count_adjacent_mines(cell)
     assert count == 2
 
 
-def test_flood_fill():
-    board = Board(rows=3, cols=3, mines_count=0)
-    board.flood_fill(1, 1)
-    
+def test_flood_fill(empty_board_3x3):
+    empty_board_3x3.flood_fill(1, 1)
+
     # Whole board should be revealed since there are 0 mines
-    for row in board.grid:
+    for row in empty_board_3x3.grid:
         for cell in row:
             assert cell.is_open is True
 
 
-def test_reveal_all_mines():
-    board = Board(rows=3, cols=3, mines_count=0)
-    board.grid[0][0].is_mine = True
-    board.grid[1][1].is_mine = True
-    
+def test_reveal_all_mines(empty_board_3x3):
+    empty_board_3x3.grid[0][0].is_mine = True
+    empty_board_3x3.grid[1][1].is_mine = True
+
     # Flag one mine, the other should be revealed
-    board.grid[1][1].toggle_flag()
-    
-    board.reveal_all_mines()
-    
-    assert board.grid[0][0].is_open is True
-    assert board.grid[1][1].is_open is False  # Flagged mines shouldn't be opened
-    assert board.grid[0][1].is_open is False  # Empty cells shouldn't be opened
+    empty_board_3x3.grid[1][1].toggle_flag()
+
+    empty_board_3x3.reveal_all_mines()
+
+    assert empty_board_3x3.grid[0][0].is_open is True
+    assert empty_board_3x3.grid[1][1].is_open is False
+    assert empty_board_3x3.grid[0][1].is_open is False
 
 
 def test_check_win():
@@ -100,12 +111,12 @@ def test_check_win():
     board.grid[0][0].is_mine = True
     # Initial state
     assert board.check_win() is False
-    
+
     # Open all non-mine cells
     board.grid[0][1].reveal()
     board.grid[1][0].reveal()
     board.grid[1][1].reveal()
-    
+
     assert board.check_win() is True
 
 
@@ -114,6 +125,6 @@ def test_get_mines_remaining():
     board.grid[0][0].toggle_flag()
     board.grid[1][1].toggle_flag()
     board.grid[2][2].toggle_flag()
-    
+
     remaining = board.get_mines_remaining()
     assert remaining == 7
