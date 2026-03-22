@@ -29,8 +29,11 @@ class Game:
         self.rows, self.cols = config["rows"], config["cols"]
         self.mines_cnt, self.cell_sz = config["mines"], config["cell_size"]
         
-        window_size = self._calculate_window_size()
-        self.screen = pygame.display.set_mode(window_size)
+        # Розрахунок розмірів вікна
+        w = self.cols * self.cell_sz
+        h = (self.rows * self.cell_sz) + HEADER_HEIGHT
+        
+        self.screen = pygame.display.set_mode((w, h))
         pygame.display.set_caption("Minesweeper")
         
         # Ініціалізація основних об'єктів
@@ -40,12 +43,6 @@ class Game:
         
         # Скидання ігрових станів
         self._reset_game_states()
-
-    def _calculate_window_size(self):
-        """Розраховує ширину та висоту вікна на основі розміру поля та хедера."""
-        width = self.cols * self.cell_sz
-        height = (self.rows * self.cell_sz) + HEADER_HEIGHT
-        return (width, height)
 
     def _reset_game_states(self):
         """Скидання ігрових станів до початкових значень"""
