@@ -9,6 +9,7 @@ from src.utils.constants import (
     DIGIT_WIDTH,
 )
 
+
 class GameRenderer:
     """
     Відповідає за відображення всіх ігрових елементів:
@@ -86,7 +87,8 @@ class GameRenderer:
                     if cell.is_mine:
                         self.screen.blit(sprites['mine'], (x, y))
                     elif cell.adjacent_mines > 0:
-                        self.screen.blit(sprites[f'tile{cell.adjacent_mines}a'], (x, y))
+                        self.screen.blit(
+                            sprites[f'tile{cell.adjacent_mines}a'], (x, y))
                 else:
                     self.screen.blit(self.closed_mask, (x, y))
                     if cell.is_flagged:
@@ -137,7 +139,8 @@ class GameRenderer:
         val = max(0, min(999, value))
         s_value = str(val).zfill(3)
         for i, digit in enumerate(s_value):
-            self.screen.blit(self.assets.header_digits[int(digit)], (x + i * DIGIT_WIDTH, y))
+            self.screen.blit(self.assets.header_digits[int(
+                digit)], (x + i * DIGIT_WIDTH, y))
 
     def draw_end_screen(self, status, current_time, best_time):
         """
@@ -164,13 +167,16 @@ class GameRenderer:
 
         # Іконки годинника та трофея
         self.screen.blit(self.assets.trophy_frames[frame_idx], (win_x, win_y))
-        self.screen.blit(self.assets.icon_clock[frame_idx], (win_x + 40, win_y + 65))
+        self.screen.blit(
+            self.assets.icon_clock[frame_idx], (win_x + 40, win_y + 65))
 
         # В залежності від статусу кінця гри - череп або усміхнене обличчя
         if status == 'lose':
-            self.screen.blit(self.assets.skull_frames[frame_idx], (win_x, win_y))
+            self.screen.blit(
+                self.assets.skull_frames[frame_idx], (win_x, win_y))
         else:
-            self.screen.blit(self.assets.smiley_frames[frame_idx], (win_x, win_y))
+            self.screen.blit(
+                self.assets.smiley_frames[frame_idx], (win_x, win_y))
 
         # Найкращий час та поточний час
         self._draw_number(current_time, win_x + 20, win_y + 110)
@@ -207,7 +213,8 @@ class GameRenderer:
         frame_idx = self._get_frame_index(ANIM_INTERVAL_HEADER)
 
         menu_x, menu_y = 10, 16
-        self.screen.blit(self.assets.drop_menu_frames[frame_idx], (menu_x, menu_y))
+        self.screen.blit(
+            self.assets.drop_menu_frames[frame_idx], (menu_x, menu_y))
 
         options = list(DIFFICULTIES.keys())
         self.menu_rects = {}
@@ -222,6 +229,8 @@ class GameRenderer:
             self.menu_rects[opt] = rect
 
             if rect.collidepoint(mouse_pos):
-                self.screen.blit(self.assets.selected_menu, (rect.x, rect.y - 5))
+                self.screen.blit(self.assets.selected_menu,
+                                 (rect.x, rect.y - 5))
 
-            self.screen.blit(self.assets.diff_labels[opt], (rect.x + 5, rect.y))
+            self.screen.blit(
+                self.assets.diff_labels[opt], (rect.x + 5, rect.y))

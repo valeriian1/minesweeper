@@ -28,7 +28,8 @@ class AssetManager:
         self.icon_clock = self._load_frames(HEADER_SPRITES, "Clock", 1, 2)
         self.board_line = self._load_frames(HEADER_SPRITES, "boardLine", 1, 2)
         self.header_digits = self._load_frames(HEADER_SPRITES, "Timer", 0, 10)
-        self.drop_menu_frames = self._load_frames(HEADER_SPRITES, "drop_menu", 1, 2)
+        self.drop_menu_frames = self._load_frames(
+            HEADER_SPRITES, "drop_menu", 1, 2)
         self.selected_menu = pygame.image.load(
             os.path.join(HEADER_SPRITES, "selected_menu.png")
         ).convert_alpha()
@@ -40,11 +41,15 @@ class AssetManager:
         }
 
         # Екран закінчення гри
-        self.endscreen_frames = self._load_frames(ENDSCREEN_SPRITES, "window", 1, 2)
-        self.trophy_frames = self._load_frames(ENDSCREEN_SPRITES, "trophy", 1, 2)
+        self.endscreen_frames = self._load_frames(
+            ENDSCREEN_SPRITES, "window", 1, 2)
+        self.trophy_frames = self._load_frames(
+            ENDSCREEN_SPRITES, "trophy", 1, 2)
         self.skull_frames = self._load_frames(ENDSCREEN_SPRITES, "skull", 1, 2)
-        self.smiley_frames = self._load_frames(ENDSCREEN_SPRITES, "smileyFace", 1, 2)
-        self.restart_btn_frames = self._load_frames(ENDSCREEN_SPRITES, "restart_btn", 1, 2)
+        self.smiley_frames = self._load_frames(
+            ENDSCREEN_SPRITES, "smileyFace", 1, 2)
+        self.restart_btn_frames = self._load_frames(
+            ENDSCREEN_SPRITES, "restart_btn", 1, 2)
 
     def _load_board_sprites(self):
         """Завантажує та масштабує спрайти ігрового поля."""
@@ -58,7 +63,8 @@ class AssetManager:
         }
         return {
             k: pygame.transform.scale(
-                pygame.image.load(os.path.join(BOARD_SPRITES, v)).convert_alpha(),
+                pygame.image.load(os.path.join(
+                    BOARD_SPRITES, v)).convert_alpha(),
                 (self.cell_size, self.cell_size),
             )
             for k, v in raw_sprites.items()
