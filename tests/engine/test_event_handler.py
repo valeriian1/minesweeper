@@ -97,7 +97,6 @@ def test_recursive_opening_mock_flood_fill(event_handler, mock_game):
     mock_cell.is_mine = False
     mock_game.board.grid = {2: {3: mock_cell}}
 
-    # Виклик _open_cell
     event_handler._open_cell(2, 3)
 
     # Перевірка виклику рекурсивного відкриття
