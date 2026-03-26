@@ -27,7 +27,7 @@ jobs:
       run: |
         # Generate HTML report for flake8. We use --exit-zero so the step doesn't fail even if there are linting errors, allowing tests to run and upload to proceed.
         # Alternatively, if you want linting to fail the build, you can remove --exit-zero, but we need reports for both!
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --format=html --htmldir=flake8-report
+        flake8 . --count --exit-zero --max-complexity=10 --statistics --format=html --htmldir=flake8-report
 
     - name: Test with pytest
       env:
