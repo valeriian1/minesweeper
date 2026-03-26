@@ -21,7 +21,8 @@ def mock_pygame():
 def test_asset_manager_init(mock_pygame):
     """
     Перевіряємо, чи ініціалізується AssetManager,
-    чи зберігається розмір клітинки та чи викликається завантаження ресурсів.
+    чи зберігається розмір клітинки та чи
+     викликається завантаження ресурсів.
     """
     manager = AssetManager(40)
     assert manager.cell_size == 40

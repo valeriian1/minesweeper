@@ -51,7 +51,8 @@ class GameRenderer:
         self.menu_rects: dict[str, pygame.Rect] = {}
 
     def _get_frame_index(self, interval_ms):
-        """Повертає індекс кадру анімації (0 або 1) з заданим інтервалом."""
+        """Повертає індекс кадру анімації (0 або 1)
+         з заданим інтервалом."""
         return (pygame.time.get_ticks() // interval_ms) % 2
 
     def get_cell_from_pos(self, pos):
@@ -149,7 +150,8 @@ class GameRenderer:
         Відображає вікно кінця гри (перемога або поразка).
 
         Args:
-            status: "win" або "lose" для визначення типу кінцевого екрану.
+            status: "win" або "lose" для визначення
+             типу кінцевого екрану.
             current_time: Час, витрачений на поточну гру.
             best_time: Найкращий час сесії.
         """
@@ -172,7 +174,8 @@ class GameRenderer:
         self.screen.blit(
             self.assets.icon_clock[frame_idx], (win_x + 40, win_y + 65))
 
-        # В залежності від статусу кінця гри - череп або усміхнене обличчя
+        # В залежності від статусу кінця гри малюємо
+        # череп або усміхнене обличчя
         if status == 'lose':
             self.screen.blit(
                 self.assets.skull_frames[frame_idx], (win_x, win_y))

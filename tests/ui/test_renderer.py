@@ -130,5 +130,6 @@ def test_draw_header(renderer):
             patch('src.ui.renderer.pygame.transform.scale') as _:
         r.draw_header(mines_count=10, time_seconds=45, difficulty="easy")
 
-        # Перевіряємо що відбувається рендеринг елементів хедера на екран
+        # Перевіряємо що відбувається рендеринг елементів
+        # хедера на екран
         assert screen_mock.blit.call_count > 0
