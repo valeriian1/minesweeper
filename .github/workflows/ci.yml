@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "master", "core_logic", "test_engine" ]
+    branches: [ "main", "master", "core_logic", "test_ui", "test_engine" ]
   pull_request:
-    branches: [ "main", "master", "core_logic", "test_engine" ]
+    branches: [ "main", "master", "core_logic", "test_ui", "test_engine" ]
 
 jobs:
   build:
