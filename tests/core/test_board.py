@@ -1,6 +1,9 @@
 import pytest
+from unittest.mock import patch
 from src.core.board import Board
 from src.core.cell import Cell
+
+pytestmark = pytest.mark.core
 
 
 @pytest.fixture
@@ -13,13 +16,18 @@ def empty_board_3x3():
     return Board(rows=3, cols=3, mines_count=0)
 
 
-def test_board_initialization():
-    board = Board(rows=10, cols=15, mines_count=20)
-    assert board.rows == 10
-    assert board.cols == 15
-    assert board.mines_count == 20
-    assert len(board.grid) == 10
-    assert len(board.grid[0]) == 15
+@pytest.mark.parametrize("rows, cols, mines", [
+    (10, 15, 20),
+    (5, 5, 5),
+    (20, 20, 50)
+])
+def test_board_initialization(rows, cols, mines):
+    board = Board(rows=rows, cols=cols, mines_count=mines)
+    assert board.rows == rows
+    assert board.cols == cols
+    assert board.mines_count == mines
+    assert len(board.grid) == rows
+    assert len(board.grid[0]) == cols
     assert isinstance(board.grid[0][0], Cell)
 
 
@@ -57,6 +65,22 @@ def test_place_mines(board_10x10):
     for row in range(4, 7):
         for col in range(4, 7):
             assert not board_10x10.grid[row][col].is_mine
+
+
+@patch('src.core.board.random.randint')
+def test_place_mines_deterministic(mock_randint):
+    board = Board(rows=5, cols=5, mines_count=2)
+
+    # The function calls col = random.randint(0, cols - 1)
+    # then row = random.randint(0, rows - 1)
+    # We provide values: (col=0, row=0) then (col=4, row=4)
+    mock_randint.side_effect = [0, 0, 4, 4]
+
+    board.place_mines(safe_row=2, safe_col=2)
+
+    assert board.grid[0][0].is_mine is True
+    assert board.grid[4][4].is_mine is True
+    assert sum(cell.is_mine for row in board.grid for cell in row) == 2
 
 
 def test_calculate_neighbors(empty_board_3x3):

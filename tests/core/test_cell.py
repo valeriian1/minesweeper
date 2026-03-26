@@ -1,16 +1,23 @@
 import pytest
 from src.core.cell import Cell
 
+pytestmark = pytest.mark.core
+
 
 @pytest.fixture
 def basic_cell():
     return Cell(col=0, row=0)
 
 
-def test_cell_initialization():
-    cell = Cell(col=5, row=3)
-    assert cell.col == 5
-    assert cell.row == 3
+@pytest.mark.parametrize("col, row", [
+    (0, 0),
+    (5, 3),
+    (10, 15)
+])
+def test_cell_initialization(col, row):
+    cell = Cell(col=col, row=row)
+    assert cell.col == col
+    assert cell.row == row
     assert not cell.is_mine
     assert not cell.is_open
     assert not cell.is_flagged
