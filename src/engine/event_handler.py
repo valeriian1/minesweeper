@@ -35,8 +35,9 @@ class EventHandler:
         pos = pygame.mouse.get_pos()
 
         # Якщо гра закінчена, перевіряємо клік по кнопці рестарту
-        if (self.game.game_over or self.game.won) and self.game.renderer.is_restart_clicked(pos):
-            self.game.setup_game()
+        if self.game.game_over or self.game.won:
+            if self.game.renderer.is_restart_clicked(pos):
+                self.game.setup_game()
             return
 
         # Якщо на зоні меню, визиваємо метод вибору складності
@@ -47,7 +48,7 @@ class EventHandler:
             return
 
         if self._is_header_clicked(pos):
-            # Якщо клік відбувся десь в межах кнопки меню, відкриваємо меню відповідно
+            # Якщо клік у межах кнопки меню, відкриваємо меню
             if 10 <= pos[0] <= 110:
                 self.game.menu_open = not self.game.menu_open
             return
@@ -61,7 +62,7 @@ class EventHandler:
         return pos[1] < HEADER_HEIGHT
 
     def _handle_menu_interaction(self, pos):
-        """Обробка вибору в меню складності, вибираємо варіант з айтемів класу рендерер."""
+        """Обробка вибору в меню складності."""
         for opt, rect in self.game.renderer.menu_rects.items():
             if rect.collidepoint(pos):
                 self.game.difficulty = opt
@@ -70,7 +71,7 @@ class EventHandler:
         return False
 
     def _handle_grid_interaction(self, event, pos):
-        """Кліки по ігровому полю. Ліва кнопка миші це відкриття клітинки, права це прапорець."""
+        """Ліва кнопка миші - відкриття, права - прапорець."""
 
         grid_pos = self.game.renderer.get_cell_from_pos(pos)
 
@@ -84,13 +85,13 @@ class EventHandler:
 
     def _open_cell(self, row, col):
         """
-        Логіка відкриття клітинки з урахуванням першого ходу, 
+        Логіка відкриття клітинки з урахуванням першого ходу,
         поведінка при відкритті клітики з міною або без міни.
         """
         cell = self.game.board.grid[row][col]
 
-        # Якщо э прапорець на клітинці 
-        # або відкрита клітинка то ніяк не реагуємо на клік
+        # Якщо є прапорець на клітинці
+        # або відкрита клітинка то не реагуємо
         if cell.is_flagged or cell.is_open:
             return
 
@@ -119,7 +120,7 @@ class EventHandler:
             self._update_best_time()
 
     def _update_best_time(self):
-        """Оновлюємо рекорд, якщо поточний час кращий за попередній або не дорівнює 0"""
-        if self.game.best_time == 0 or self.game.elapsed_time < self.game.best_time:
-                self.game.best_time = self.game.elapsed_time
-
+        """Оновлюємо рекорд, якщо поточний час кращий."""
+        is_better = self.game.elapsed_time < self.game.best_time
+        if self.game.best_time == 0 or is_better:
+            self.game.best_time = self.game.elapsed_time
