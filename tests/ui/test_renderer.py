@@ -36,7 +36,8 @@ def renderer(mock_asset_manager):
     ((300, 300), (7, 10)),   # Віддалена клітинка
 ])
 def test_get_cell_from_pos(renderer, pos, expected):
-    """Тестує конвертацію екранних координат кліку у логічні координати дошки."""
+    """Тестує конвертацію екранних координат кліку у
+    логічні координати дошки."""
     r, _, _, _ = renderer
     assert r.get_cell_from_pos(pos) == expected
 
@@ -79,7 +80,8 @@ def test_is_restart_clicked(renderer, click_pos, is_colliding):
 @pytest.mark.ui
 @pytest.mark.renderer
 def test_draw_board(renderer):
-    """Тестує чи методи малювання викликають правильні звернення до екрану об'єкта screen."""
+    """Тестує чи методи малювання викликають правильні
+    звернення до екрану об'єкта screen."""
     r, screen_mock, _, mock_am = renderer
 
     # Мокаємо Board об'єкт
@@ -125,7 +127,7 @@ def test_draw_header(renderer):
     mock_am_instance.header_digits = [MagicMock() for _ in range(10)]
 
     with patch('src.ui.renderer.pygame.time.get_ticks', return_value=0), \
-            patch('src.ui.renderer.pygame.transform.scale') as mock_scale:
+            patch('src.ui.renderer.pygame.transform.scale') as _:
         r.draw_header(mines_count=10, time_seconds=45, difficulty="easy")
 
         # Перевіряємо що відбувається рендеринг елементів хедера на екран

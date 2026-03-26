@@ -1,7 +1,12 @@
 import pygame
 import os
 
-from src.utils.constants import DIFFICULTIES, BOARD_SPRITES, HEADER_SPRITES, ENDSCREEN_SPRITES
+from src.utils.constants import (
+    DIFFICULTIES,
+    BOARD_SPRITES,
+    HEADER_SPRITES,
+    ENDSCREEN_SPRITES,
+)
 
 
 class AssetManager:
