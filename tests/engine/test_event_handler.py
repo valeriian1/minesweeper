@@ -1,20 +1,42 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import create_autospec, patch, MagicMock
 import pygame
+
 from src.engine.event_handler import EventHandler
+from src.engine.game import Game
+from src.core.board import Board
+from src.ui.renderer import GameRenderer
+from src.core.cell import Cell
 
 
 @pytest.fixture
 def mock_game():
-    """Фікстура, яка надає мок об'єкт Game."""
-    game = MagicMock()
+    """
+    Фікстура, яка надає безпечний мок
+    об'єкт Game зі специфікацією.
+    """
+    game = create_autospec(Game, instance=True)
     game.first_click = False
     game.game_over = False
     game.won = False
     game.menu_open = False
     game.best_time = 0
     game.elapsed_time = 0
+
+    game.board = create_autospec(Board, instance=True)
+    game.renderer = create_autospec(GameRenderer, instance=True)
     return game
+
+
+@pytest.fixture
+def mock_grid(mock_game):
+    """Фікстура для створення і встановлення мокованої 2D сітки."""
+    grid = [
+        [create_autospec(Cell, instance=True) for _ in range(5)]
+        for _ in range(5)
+    ]
+    mock_game.board.grid = grid
+    return grid
 
 
 @pytest.fixture
@@ -29,121 +51,160 @@ def test_handle_quit_event(event_handler, mock_game):
     quit_event = MagicMock()
     quit_event.type = pygame.QUIT
 
-    with patch(
-        "src.engine.event_handler.pygame.event.get", return_value=[quit_event]
-    ):
+    patch_path = "src.engine.event_handler.pygame.event.get"
+    with patch(patch_path, return_value=[quit_event]):
         event_handler.handle_events()
 
     assert mock_game.running is False
 
 
 @pytest.mark.logic
-def test_flags_logic_right_click(event_handler, mock_game):
-    """Тест встановлення прапорця правим кліком."""
-    # Налаштування події
+def test_flags_logic_right_click(event_handler, mock_game, mock_grid):
+    """
+    Тест встановлення прапорця правим кліком
+    через публічний інтерфейс.
+    """
     click_event = MagicMock()
     click_event.type = pygame.MOUSEBUTTONDOWN
-    click_event.button = 3  # Правий клік
+    click_event.button = 3
 
-    # Мок позиції
     pos = (50, 100)
     mock_game.renderer.get_cell_from_pos.return_value = (1, 1)
 
-    # Мокаємо саму клітинку
-    mock_cell = MagicMock()
+    mock_cell = mock_grid[1][1]
     mock_cell.is_flagged = False
-    mock_game.board.grid = {1: {1: mock_cell}}
 
-    with patch(
-        "src.engine.event_handler.pygame.mouse.get_pos", return_value=pos
-    ), patch(
-        "src.engine.event_handler.pygame.event.get", return_value=[click_event]
-    ):
-        # Виклик обробника подій поля
+    patch_pos = "src.engine.event_handler.pygame.mouse.get_pos"
+    patch_event = "src.engine.event_handler.pygame.event.get"
+
+    with patch(patch_pos, return_value=pos), \
+            patch(patch_event, return_value=[click_event]):
         event_handler.handle_events()
 
-    # Перевірка виклику toggle_flag
     mock_cell.toggle_flag.assert_called_once()
 
 
 @pytest.mark.logic
 @pytest.mark.parametrize("is_flagged, is_open", [
-    (True, False),  # Клітинка з прапорцем
-    (False, True),  # Вже відкрита клітинка
+    (True, False),
+    (False, True),
 ])
 def test_ignore_clicks_on_flags_or_open(
-    event_handler, mock_game, is_flagged, is_open
+    event_handler, mock_game, mock_grid, is_flagged, is_open
 ):
-    """Тест ігнорування кліків на відкриті та помічені клітинки."""
-    mock_cell = MagicMock()
+    """
+    Тест ігнорування кліків лівою кнопкою на відкриті
+    та помічені клітинки через handle_events.
+    """
+    click_event = MagicMock()
+    click_event.type = pygame.MOUSEBUTTONDOWN
+    click_event.button = 1
+
+    pos = (50, 100)
+    mock_game.renderer.get_cell_from_pos.return_value = (0, 0)
+
+    mock_cell = mock_grid[0][0]
     mock_cell.is_flagged = is_flagged
     mock_cell.is_open = is_open
-    mock_game.board.grid = {0: {0: mock_cell}}
 
-    # Спроба відкрити клітинку
-    event_handler._open_cell(0, 0)
+    patch_pos = "src.engine.event_handler.pygame.mouse.get_pos"
+    patch_event = "src.engine.event_handler.pygame.event.get"
 
-    # Перевірка, що генерація та flood_fill не викликалися
-    assert not mock_game.board.place_mines.called
-    assert not mock_game.board.flood_fill.called
+    with patch(patch_pos, return_value=pos), \
+            patch(patch_event, return_value=[click_event]):
+        event_handler.handle_events()
 
-
-@pytest.mark.logic
-def test_recursive_opening_mock_flood_fill(event_handler, mock_game):
-    """Тест рекурсивного відкриття порожніх клітинок."""
-    mock_cell = MagicMock()
-    mock_cell.is_flagged = False
-    mock_cell.is_open = False
-    mock_cell.is_mine = False
-    mock_game.board.grid = {2: {3: mock_cell}}
-
-    event_handler._open_cell(2, 3)
-
-    # Перевірка виклику рекурсивного відкриття
-    mock_game.board.flood_fill.assert_called_once_with(2, 3)
+    mock_game.board.place_mines.assert_not_called()
+    mock_game.board.flood_fill.assert_not_called()
 
 
 @pytest.mark.logic
 @pytest.mark.parametrize("state", ["game_over", "won"])
 def test_ignore_events_after_game_over(event_handler, mock_game, state):
-    """Тест ігнорування кліків після завершення гри."""
-    # Встановлюємо стан гри
+    """Тест ігнорування кліків по полю після завершення гри."""
     if state == "game_over":
         mock_game.game_over = True
     else:
         mock_game.won = True
 
-    # Симулюємо ігнорування кнопки рестарту
     mock_game.renderer.is_restart_clicked.return_value = False
 
-    # Створюємо подію кліку нижче хедера
+    click_event = MagicMock()
+    click_event.type = pygame.MOUSEBUTTONDOWN
+    click_event.button = 1
     pos = (50, 100)
+
+    patch_pos = "src.engine.event_handler.pygame.mouse.get_pos"
+    patch_event = "src.engine.event_handler.pygame.event.get"
+    mock_interaction = "_handle_grid_interaction"
+
+    with patch.object(event_handler, mock_interaction) as mi, \
+            patch(patch_pos, return_value=pos), \
+            patch(patch_event, return_value=[click_event]):
+        event_handler.handle_events()
+
+    mi.assert_not_called()
+
+
+@pytest.mark.logic
+def test_open_cell_with_mine(event_handler, mock_game, mock_grid):
+    """Тест, що клік по міні повністю зупиняє гру та показує міни."""
     click_event = MagicMock()
     click_event.type = pygame.MOUSEBUTTONDOWN
     click_event.button = 1
 
-    # Мок взаємодії з полем
-    with patch.object(
-        event_handler, "_handle_grid_interaction"
-    ) as mock_interaction:
-        with patch(
-            "src.engine.event_handler.pygame.mouse.get_pos", return_value=pos
-        ):
-            event_handler._handle_mouse_click(click_event)
+    pos = (50, 100)
+    mock_game.renderer.get_cell_from_pos.return_value = (0, 0)
 
-        mock_interaction.assert_not_called()
-
-
-@pytest.mark.logic
-def test_open_cell_with_mine(event_handler, mock_game):
-    """Тест, що відкриття міни змінює стан на game_over."""
-    mock_cell = MagicMock()
+    mock_cell = mock_grid[0][0]
     mock_cell.is_flagged = False
     mock_cell.is_open = False
     mock_cell.is_mine = True
-    mock_game.board.grid = {0: {0: mock_cell}}
 
-    event_handler._open_cell(0, 0)
+    patch_pos = "src.engine.event_handler.pygame.mouse.get_pos"
+    patch_event = "src.engine.event_handler.pygame.event.get"
+
+    with patch(patch_pos, return_value=pos), \
+            patch(patch_event, return_value=[click_event]):
+        event_handler.handle_events()
 
     assert mock_game.game_over is True
     mock_game.board.reveal_all_mines.assert_called_once()
+
+
+@pytest.mark.logic
+@patch("src.engine.event_handler.time.time")
+def test_first_click_logic(mock_time, event_handler, mock_game, mock_grid):
+    """
+    Тест логіки першого кліку: розміщення мін,
+    підрахунок сусідів, старт таймера.
+    """
+    mock_time.return_value = 1234.5
+    mock_game.first_click = True
+
+    click_event = MagicMock()
+    click_event.type = pygame.MOUSEBUTTONDOWN
+    click_event.button = 1
+
+    pos = (50, 100)
+    mock_game.renderer.get_cell_from_pos.return_value = (2, 2)
+
+    mock_cell = mock_grid[2][2]
+    mock_cell.is_flagged = False
+    mock_cell.is_open = False
+    mock_cell.is_mine = False
+
+    patch_pos = "src.engine.event_handler.pygame.mouse.get_pos"
+    patch_event = "src.engine.event_handler.pygame.event.get"
+
+    with patch(patch_pos, return_value=pos), \
+            patch(patch_event, return_value=[click_event]):
+        event_handler.handle_events()
+
+    mock_game.board.place_mines.assert_called_once_with(
+        safe_row=2, safe_col=2
+    )
+    mock_game.board.calculate_neighbors.assert_called_once()
+    assert mock_game.first_click is False
+    assert mock_game.start_time == 1234.5
+    mock_game.board.flood_fill.assert_called_once_with(2, 2)
